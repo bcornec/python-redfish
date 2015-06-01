@@ -21,7 +21,7 @@ class RedfishException(Exception):
         if not message:
             try:
                 message = self.message % kwargs
-            except Excetion as e:
+            except Exception as e:
                 LOG.exception('Error in string format operation')
                 message = self.message
         super(RedfishException, self).__init__(message)
