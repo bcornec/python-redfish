@@ -168,6 +168,14 @@ class RedfishConnection(object):
         self.apiUrl = tortilla.wrap('http://localhost:8000')
         self.root = self.apiUrl.get()
         
+        
+        systemCollectionLink = getattr(self.root.Links.Systems,"@odata.id")
+        self.systemCollection = self.apiUrl.redfish.v1.Systems.get()
+        
+        print self.systemCollection.Name
+    
+        
+        
 
 #         self._connect()
 # 
@@ -191,9 +199,12 @@ class RedfishConnection(object):
     def getApiVersion(self):
         return self.root.RedfishVersion
         
+    def getApiUUID(self):
+        return self.root.UUID
 
-
-
+    def getApiLinkToServer(self):
+        return getattr(self.root.Links.Systems,"@odata.id") 
+    
 
     def _connect(self):
         #LOG.debug("Establishing connection to host %s", self.host)
