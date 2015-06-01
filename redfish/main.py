@@ -13,6 +13,7 @@
 # under the License.
 
 
+
 """
 STARTING ASSUMPTIONS
 
@@ -117,24 +118,24 @@ Clients should always be prepared for:
 
 import base64
 import gzip
-import hashlib
 import httplib
 import json
 import ssl
 import StringIO
 import sys
-import urllib2
+import tortilla
+#from urllib2 import *
 from urlparse import urlparse
 
-from oslo_log import log as logging
+#from oslo_log import log as logging
 
-from redfish import exception
-from redfish import types
-
-
-LOG = logging.getLogger('redfish')
+#from redfish import exception
+#from redfish import types
 
 
+#LOG = logging.getLogger('redfish')
+
+""" Function to wrap RedfishConnection """
 def connect(host, user, password):
     return RedfishConnection(host, user, password)
 
@@ -147,10 +148,13 @@ class RedfishConnection(object):
         """Initialize a connection to a Redfish service."""
         super(RedfishConnection, self).__init__()
 
+        
         self.user_name = user_name
         self.password = password
-        self.auth_token = auth_token
         self.enforce_SSL = enforce_SSL
+
+
+        self.auth_token = auth_token
 
         # context for the last status and header returned from a call
         self.status = None
@@ -160,24 +164,39 @@ class RedfishConnection(object):
         if host[0:4] != 'http':
             host = 'https://' + host
         self.host = host
+        
+        self.apiUrl = tortilla.wrap('http://localhost:8000')
+        self.root = self.apiUrl.get()
+        
 
-        self._connect()
+#         self._connect()
+# 
+#         if not self.auth_token:
+#             # TODO: if a token is returned by this call, cache it. However,
+#             # the sample HTML does not include any token data, so it's unclear
+#             # what we should do here.
+#             #LOG.debug('Initiating session with host %s', self.host)
+#             auth_dict = {'Password': self.password, 'UserName': self.user_name}
+#             response = self.rest_post(
+#                     '/redfish/v1/Sessions', None, json.dumps(auth_dict))
+# 
+#         # TODO: do some schema discovery here and cache the result
+#         # self.schema = ...
+#         #LOG.info('Connection established to host %s', self.host)
 
-        if not self.auth_token:
-            # TODO: if a token is returned by this call, cache it. However,
-            # the sample HTML does not include any token data, so it's unclear
-            # what we should do here.
-            LOG.debug('Initiating session with host %s', self.host)
-            auth_dict = {'Password': self.password, 'UserName': self.user_name}
-            response = self.rest_post(
-                    '/redfish/v1/Sessions', None, json.dumps(auth_dict))
+        #_getVersion()
+        
+        
+        
+    def getApiVersion(self):
+        return self.root.RedfishVersion
+        
 
-        # TODO: do some schema discovery here and cache the result
-        # self.schema = ...
-        LOG.info('Connection established to host %s', self.host)
+
+
 
     def _connect(self):
-        LOG.debug("Establishing connection to host %s", self.host)
+        #LOG.debug("Establishing connection to host %s", self.host)
         url = urlparse(self.host)
         if url.scheme == 'https':
             # New in Python 2.7.9, SSL enforcement is defaulted on.
@@ -199,8 +218,9 @@ class RedfishConnection(object):
             self.connection = httplib.HTTPConnection(
                     host=url.netloc, strict=True)
         else:
-            raise exception.RedfishException(
-                    message='Unknown connection schema')
+            pass
+            #raise exception.RedfishException(
+            #        message='Unknown connection schema')
 
     def _op(self, operation, suburi, request_headers=None, request_body=None):
         """
@@ -248,7 +268,7 @@ class RedfishConnection(object):
             if resp.status == 301 and 'location' in headers:
                 url = urlparse(headers['location'])
                 # TODO: cache these redirects
-                LOG.debug("Following redirect to %s", headers['location'])
+                #LOG.debug("Following redirect to %s", headers['location'])
                 redir_count -= 1
             else:
                 break
@@ -264,9 +284,10 @@ class RedfishConnection(object):
                 uncompressed_string = gzipper.read().decode('UTF-8')
                 response = json.loads(uncompressed_string)
             except:
-                raise exception.RedfishException(message=
-                        'Failed to parse response as a JSON document, '
-                        'received "%s".' % body)
+                pass
+                #raise exception.RedfishException(message=
+                #        'Failed to parse response as a JSON document, '
+                #        'received "%s".' % body)
 
         self.status = resp.status
         self.headers = headers
@@ -327,8 +348,8 @@ class RedfishConnection(object):
         # NOTE:  response may be an ExtendedError or may be empty
         return self._op('DELETE', suburi, request_headers, None)
 
-    def get_root(self):
-        return types.Root(self.rest_get('/redfish/v1', {}), connection=self)
+#    def get_root(self):
+#        return types.Root(self.rest_get('/redfish/v1', {}), connection=self)
 
 
 class Version(object):
@@ -338,7 +359,8 @@ class Version(object):
             if len(buf) < 2:
                 raise AttributeError
         except AttributeError:
-            raise RedfishException(message="Failed to parse version string")
+            pass
+            #raise RedfishException(message="Failed to parse version string")
         self.major = int(buf[0])
         self.minor = int(buf[1])
 

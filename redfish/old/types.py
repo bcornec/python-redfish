@@ -28,10 +28,10 @@ import sys
 import urllib2
 from urlparse import urlparse
 
-from oslo_log import log as logging
+#from oslo_log import log as logging
 from redfish import exception
 
-LOG = logging.getLogger('redfish')
+#LOG = logging.getLogger('redfish')
 
 
 class Base(object):
