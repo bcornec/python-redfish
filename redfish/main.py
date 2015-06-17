@@ -124,56 +124,78 @@ import ssl
 import StringIO
 import sys
 import tortilla
+import logging
 #from urllib2 import *
 from urlparse import urlparse
-
+from logging.handlers import RotatingFileHandler
 #from oslo_log import log as logging
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s :: %(levelname)s :: %(message)s')
+file_handler = RotatingFileHandler('/home/uggla/python-redfish/python-redfish.log', 'a', 1000000, 1)
 
+# First logger to file
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+# Second logger to console
+steam_handler = logging.StreamHandler()
+steam_handler.setLevel(logging.DEBUG)
+logger.addHandler(steam_handler)
 #from redfish import exception
 #from redfish import types
 
 
 #LOG = logging.getLogger('redfish')
 
+
+
+
 """ Function to wrap RedfishConnection """
-def connect(host, user, password):
-    return RedfishConnection(host, user, password)
+def connect(url, user, password):
+    return RedfishConnection(url, user, password, simulator=True)
 
 
 class RedfishConnection(object):
     """Implements basic connection handling for Redfish APIs."""
 
-    def __init__(self, host, user_name, password,
+    def __init__(self, url, user_name, password, simulator, 
                  auth_token=None, enforce_SSL=True):
         """Initialize a connection to a Redfish service."""
         super(RedfishConnection, self).__init__()
 
+        logger.info('Initialize python-redfish')
         
+        self.url = url
         self.user_name = user_name
         self.password = password
-        self.enforce_SSL = enforce_SSL
-
-
+        self.simulator = simulator
+        
         self.auth_token = auth_token
+        self.enforce_SSL = enforce_SSL
 
         # context for the last status and header returned from a call
         self.status = None
         self.headers = None
 
         # If the http schema wasn't specified, default to HTTPS
-        if host[0:4] != 'http':
-            host = 'https://' + host
-        self.host = host
-        
-        self.apiUrl = tortilla.wrap('http://localhost:8000')
-        self.root = self.apiUrl.get()
+        #if url[0:4] != 'http':
+        #    url = 'https://' + url
         
         
-        systemCollectionLink = getattr(self.root.Links.Systems,"@odata.id")
-        self.systemCollection = self.apiUrl.redfish.v1.Systems.get()
         
-        print self.systemCollection.Name
-    
+        self.apiUrl = tortilla.wrap(url)
+        self.root = self.apiUrl.get(verify=False)
+        
+        
+    #===========================================================================
+    #     systemCollectionLink = getattr(self.root.Links.Systems,"@odata.id")
+    #     self.systemCollection = self.apiUrl.redfish.v1.Systems.get()
+    #     
+    #     print self.systemCollection.Name
+    # 
+    #===========================================================================
         
         
 
@@ -183,21 +205,26 @@ class RedfishConnection(object):
 #             # TODO: if a token is returned by this call, cache it. However,
 #             # the sample HTML does not include any token data, so it's unclear
 #             # what we should do here.
-#             #LOG.debug('Initiating session with host %s', self.host)
+#             #LOG.debug('Initiating session with url %s', self.url)
 #             auth_dict = {'Password': self.password, 'UserName': self.user_name}
 #             response = self.rest_post(
 #                     '/redfish/v1/Sessions', None, json.dumps(auth_dict))
 # 
 #         # TODO: do some schema discovery here and cache the result
 #         # self.schema = ...
-#         #LOG.info('Connection established to host %s', self.host)
+#         #LOG.info('Connection established to url %s', self.url)
 
         #_getVersion()
         
         
         
     def getApiVersion(self):
-        return self.root.RedfishVersion
+        try:
+            version = self.root.RedfishVersion
+        except AttributeError:
+            version = self.root.ServiceVersion
+        return(version)
+        
         
     def getApiUUID(self):
         return self.root.UUID
@@ -207,8 +234,8 @@ class RedfishConnection(object):
     
 
     def _connect(self):
-        #LOG.debug("Establishing connection to host %s", self.host)
-        url = urlparse(self.host)
+        #LOG.debug("Establishing connection to url %s", self.url)
+        url = urlparse(self.url)
         if url.scheme == 'https':
             # New in Python 2.7.9, SSL enforcement is defaulted on.
             # It can be opted-out of, which might be useful for debugging
@@ -221,13 +248,13 @@ class RedfishConnection(object):
                 cont = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
                 cont.verify_mode = ssl.CERT_NONE
                 self.connection = httplib.HTTPSConnection(
-                        host=url.netloc, strict=True, context=cont)
+                        url=url.netloc, strict=True, context=cont)
             else:
                 self.connection = httplib.HTTPSConnection(
-                        host=url.netloc, strict=True)
+                        url=url.netloc, strict=True)
         elif url.scheme == 'http':
             self.connection = httplib.HTTPConnection(
-                    host=url.netloc, strict=True)
+                    url=url.netloc, strict=True)
         else:
             pass
             #raise exception.RedfishException(
@@ -245,7 +272,7 @@ class RedfishConnection(object):
         # ensure trailing slash
         if suburi[-1:] != '/':
             suburi = suburi + '/'
-        url = urlparse(self.host + suburi)
+        url = urlparse(self.url + suburi)
 
         if not isinstance(request_headers, dict):
             request_headers = dict()
