@@ -116,19 +116,14 @@ Clients should always be prepared for:
 
 """
 
-import base64
-import gzip
-import httplib
 import json
-import ssl
-import StringIO
 import sys
 import tortilla
 import requests
 import logging
 from urlparse import urlparse
 from logging.handlers import RotatingFileHandler
-#from oslo_log import log as logging
+
 
 ''' Global variable definition'''
 logger = logging.getLogger()
@@ -156,15 +151,11 @@ def initializeLogger(logFile):
     steam_handler.setLevel(logging.DEBUG)
     logger.addHandler(steam_handler)
     return True
-    
-#from redfish import exception
-#from redfish import types
 
 
-#LOG = logging.getLogger('redfish')
-def setLogFile(file):
+def setLogFile(logfile):
     global logFile
-    logFile=file
+    logFile=logfile
     return True
 
 
@@ -193,26 +184,40 @@ class RedfishConnection(object):
         self.enforceSSL = enforceSSL
         self.verifyCert = verifyCert
 
-        # context for the last status and header returned from a call
-        self.status = None
-        self.headers = None
+        # Session attributes 
         self.auth_token = None
+        self.userUri = None
         
         rootUrl = urlparse(url)
         
         # Enforce ssl
         if self.enforceSSL == True:
+            logger.debug("Enforcing SSL")
             rootUrl = rootUrl._replace(scheme = "https")
-
+            
+        # Verify cert
+        if self.verifyCert == False:
+            logger.info("Certificat is not checked, this is insecure and can allow a man in the middle attack")    
+            
+            
         logger.debug("Root url : %s", rootUrl.geturl())            
         self.apiUrl = tortilla.wrap(rootUrl.geturl(), debug=tortillaDebug)
         self.root = self.apiUrl.get(verify=self.verifyCert)
         
+        self.version = self.getApiVersion()
+        logger.debug("API Version : %s", self.version)
+        
         if self.simulator == False:
-            self.login()
-        
-        
-        
+            try:
+                logger.info("Login to %s", rootUrl.netloc)
+                self.login()
+                logger.info("Login successful")
+            except "Error getting token":
+                logger.error("Login fail, error getting token")
+                sys.exit(1)
+     
+       
+       
         
     #===========================================================================
     #     systemCollectionLink = getattr(self.root.Links.Systems,"@odata.id")
@@ -221,27 +226,9 @@ class RedfishConnection(object):
     #     print self.systemCollection.Name
     # 
     #===========================================================================
-        
-        
-
-#         self._connect()
-# 
-#         if not self.auth_token:
-#             # TODO: if a token is returned by this call, cache it. However,
-#             # the sample HTML does not include any token data, so it's unclear
-#             # what we should do here.
-#             #LOG.debug('Initiating session with url %s', self.url)
-#             auth_dict = {'Password': self.password, 'UserName': self.user_name}
-#             response = self.rest_post(
-#                     '/redfish/v1/Sessions', None, json.dumps(auth_dict))
-# 
-#         # TODO: do some schema discovery here and cache the result
-#         # self.schema = ...
-#         #LOG.info('Connection established to url %s', self.url)
-
-        #_getVersion()
-        
-        
+     
+       
+    
         
     def getApiVersion(self):
         try:
@@ -250,267 +237,69 @@ class RedfishConnection(object):
             version = self.root.ServiceVersion
         return(version)
         
-        
+       
     def getApiUUID(self):
         return self.root.UUID
 
     def getApiLinkToServer(self):
         return getattr(self.root.Links.Systems,"@odata.id") 
     
-    
+   
     def login(self):
-        # Craft request body
-        requestBody = {"UserName":self.user_name,"Password":self.password}
+        # Craft full url
+        urlpath = UrlPathMapper()     
+        url = self.url + urlpath.mapSessions(self.version) 
         
+        # Craft request body and header
+        requestBody = {"UserName":self.user_name,"Password":self.password}
+        header = {'Content-type': 'application/json'}
         #=======================================================================
         # Tortilla seems not able to provide the header of a post request answer.
         # However this is required by redfish standard to get X-Auth-Token.
-        # So jump to "requests" library to get the required token. 
-        #=======================================================================
-        
-        
-        
+        # So jump to "requests" library to get the required token.
+        # TODO : Patch tortilla to handle this case.
+        #=======================================================================     
         #sessionsUrl = tortilla.wrap("https://10.3.222.104/rest/v1/Sessions", debug=tortillaDebug)
         #sessions = sessionsUrl.post(verify=self.verifyCert, data=requestBody)
        
+        auth = requests.post(url, data = json.dumps(requestBody), headers=header, verify=self.verifyCert)
+        
+        if auth.status_code != 201:
+            raise "Error getting token", auth.status_code
+        
+        self.auth_token = auth.headers.get("x-auth-token")
+        self.userUri = auth.headers.get("location")
+        logger.debug("x-auth-token : %s", self.auth_token)
+        logger.debug("user session : %s", self.userUri)
+        return True
+        
+    def logout(self):
+        # Craft full url
+        url = self.userUri
+        
+        # Craft request header
+        header = {'Content-type': 'application/json', 'x-auth-token':self.auth_token}
+        
+        logout = requests.delete(url, headers=header, verify=self.verifyCert)
+        
+        if logout.status_code == 200:
+            logger.info("Logout successful")
+        else:
+            logger.error("Logout failed")
+            sys.exit(1)
+    
+class UrlPathMapper(object):
+    """Implements basic url path mapping beetween Redfish versions."""
+    
+    def __init__(self):
+        pass
+    
+    
+    def mapSessions(self,redfishVersion):
+        if redfishVersion == '0.9.5':
+            return "/Sessions"
+        if redfishVersion == '0.96.0':
+            return "/SessionService"
         
         
     
-
-    def _connect(self):
-        #LOG.debug("Establishing connection to url %s", self.url)
-        url = urlparse(self.url)
-        if url.scheme == 'https':
-            # New in Python 2.7.9, SSL enforcement is defaulted on.
-            # It can be opted-out of, which might be useful for debugging
-            # some things. The below case is the Opt-Out condition and
-            # should be used with GREAT caution.
-            if (sys.version_info.major == 2
-                    and sys.version_info.minor == 7
-                    and sys.version_info.micro >= 9
-                    and self.enforce_SSL == False):
-                cont = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
-                cont.verify_mode = ssl.CERT_NONE
-                self.connection = httplib.HTTPSConnection(
-                        url=url.netloc, strict=True, context=cont)
-            else:
-                self.connection = httplib.HTTPSConnection(
-                        url=url.netloc, strict=True)
-        elif url.scheme == 'http':
-            self.connection = httplib.HTTPConnection(
-                    url=url.netloc, strict=True)
-        else:
-            pass
-            #raise exception.RedfishException(
-            #        message='Unknown connection schema')
-
-    def _op(self, operation, suburi, request_headers=None, request_body=None):
-        """
-        REST operation generic handler
-
-        :param operation: GET, POST, etc
-        :param suburi: the URI path to the resource
-        :param request_headers: optional dict of headers
-        :param request_body: optional JSON body
-        """
-        # ensure trailing slash
-        if suburi[-1:] != '/':
-            suburi = suburi + '/'
-        url = urlparse(self.url + suburi)
-
-        if not isinstance(request_headers, dict):
-            request_headers = dict()
-        request_headers['Content-Type'] = 'application/json'
-
-        # if X-Auth-Token specified, supply it instead of basic auth
-        if self.auth_token is not None:
-            request_headers['X-Auth-Token'] = self.auth_token
-        # else use user_name/password and Basic Auth
-        elif self.user_name is not None and self.password is not None:
-            request_headers['Authorization'] = ("BASIC " + base64.b64encode(
-                    self.user_name + ":" + self.password))
-        # TODO: add support for other types of auth
-
-        redir_count = 4
-        while redir_count:
-            # NOTE: Do not assume every HTTP operation will return a JSON body.
-            # For example, ExtendedError structures are only required for
-            # HTTP 400 errors and are optional elsewhere as they are mostly
-            # redundant for many of the other HTTP status code.  In particular,
-            # 200 OK responses should not have to return any body.
-            self.connection.request(operation, url.path,
-                    headers=request_headers, body=json.dumps(request_body))
-            resp = self.connection.getresponse()
-            body = resp.read()
-            # NOTE:  this makes sure the headers names are all lower case
-            # because HTTP says they are case insensitive
-            headers = dict((x.lower(), y) for x, y in resp.getheaders())
-
-            # Follow HTTP redirect
-            if resp.status == 301 and 'location' in headers:
-                url = urlparse(headers['location'])
-                # TODO: cache these redirects
-                #LOG.debug("Following redirect to %s", headers['location'])
-                redir_count -= 1
-            else:
-                break
-
-        response = dict()
-        try:
-            response = json.loads(body.decode('utf-8'))
-        except ValueError: # if it doesn't decode as json
-            # NOTE:  resources may return gzipped content, so try to decode
-            # as gzip (we should check the headers for Content-Encoding=gzip)
-            try:
-                gzipper = gzip.GzipFile(fileobj=StringIO.StringIO(body))
-                uncompressed_string = gzipper.read().decode('UTF-8')
-                response = json.loads(uncompressed_string)
-            except:
-                pass
-                #raise exception.RedfishException(message=
-                #        'Failed to parse response as a JSON document, '
-                #        'received "%s".' % body)
-
-        self.status = resp.status
-        self.headers = headers
-        return response
-
-    def rest_get(self, suburi, request_headers):
-        """REST GET
-
-        :param: suburi
-        :param: request_headers
-        """
-        # NOTE:  be prepared for various HTTP responses including 500, 404, etc
-        return self._op('GET', suburi, request_headers, None)
-
-    def rest_patch(self, suburi, request_headers, request_body):
-        """REST PATCH
-
-        :param: suburi
-        :param: request_headers
-        :param: request_body
-        NOTE: this body is a dict, not a JSONPATCH document.
-              redfish does not follow IETF JSONPATCH standard
-              https://tools.ietf.org/html/rfc6902
-        """
-        # NOTE:  be prepared for various HTTP responses including 500, 404, 202
-        return self._op('PATCH', suburi, request_headers, request_body)
-
-    def rest_put(self, suburi, request_headers, request_body):
-        """REST PUT
-
-        :param: suburi
-        :param: request_headers
-        :param: request_body
-        """
-        # NOTE:  be prepared for various HTTP responses including 500, 404, 202
-        return self._op('PUT', suburi, request_headers, request_body)
-
-    def rest_post(self, suburi, request_headers, request_body):
-        """REST POST
-
-        :param: suburi
-        :param: request_headers
-        :param: request_body
-        """
-        # NOTE:  don't assume any newly created resource is included in the
-        # response.  Only the Location header matters.
-        # the response body may be the new resource, it may be an
-        # ExtendedError, or it may be empty.
-        return self._op('POST', suburi, request_headers, request_body)
-
-    def rest_delete(self, suburi, request_headers):
-        """REST DELETE
-
-        :param: suburi
-        :param: request_headers
-        """
-        # NOTE:  be prepared for various HTTP responses including 500, 404
-        # NOTE:  response may be an ExtendedError or may be empty
-        return self._op('DELETE', suburi, request_headers, None)
-
-#    def get_root(self):
-#        return types.Root(self.rest_get('/redfish/v1', {}), connection=self)
-
-
-class Version(object):
-    def __init__(self, string):
-        try:
-            buf = string.split('.')
-            if len(buf) < 2:
-                raise AttributeError
-        except AttributeError:
-            pass
-            #raise RedfishException(message="Failed to parse version string")
-        self.major = int(buf[0])
-        self.minor = int(buf[1])
-
-    def __repr__(self):
-        return str(self.major) + '.' + str(self.minor)
-
-
-# return the type of an object (down to the major version, skipping minor, and errata)
-def get_type(obj):
-    typever = obj['Type']
-    typesplit = typever.split('.')
-    return typesplit[0] + '.' + typesplit[1]
-
-
-# checks HTTP response headers for specified operation (e.g. 'GET' or 'PATCH')
-def operation_allowed(headers_dict, operation):
-    if 'allow' in headers_dict:
-        if headers_dict['allow'].find(operation) != -1:
-            return True
-    return False
-
-
-# Message registry support
-# XXX not supported yet
-message_registries = {}
-
-
-# Build a list of decoded messages from the extended_error using the message
-# registries An ExtendedError JSON object is a response from the with its own
-# schema.  This function knows how to parse the ExtendedError object and, using
-# any loaded message registries, render an array of plain language strings that
-# represent the response.
-def render_extended_error_message_list(extended_error):
-    messages = []
-    if isinstance(extended_error, dict):
-        if 'Type' in extended_error and extended_error['Type'].startswith('ExtendedError.'):
-            for msg in extended_error['Messages']:
-                MessageID = msg['MessageID']
-                x = MessageID.split('.')
-                registry = x[0]
-                msgkey = x[len(x) - 1]
-
-                # if the correct message registry is loaded, do string resolution
-                if registry in message_registries:
-                    if registry in message_registries and msgkey in message_registries[registry]['Messages']:
-                        msg_dict = message_registries[registry]['Messages'][msgkey]
-                        msg_str = MessageID + ':  ' + msg_dict['Message']
-
-                        for argn in range(0, msg_dict['NumberOfArgs']):
-                            subst = '%' + str(argn+1)
-                            msg_str = msg_str.replace(subst, str(msg['MessageArgs'][argn]))
-
-                        if 'Resolution' in msg_dict and msg_dict['Resolution'] != 'None':
-                            msg_str += '  ' + msg_dict['Resolution']
-
-                        messages.append(msg_str)
-                else: # no message registry, simply return the msg object in string form
-                    messages.append('No Message Registry Info:  '+ str(msg))
-
-    return messages
-
-
-# Print a list of decoded messages from the extended_error using the message registries
-def print_extended_error(extended_error):
-    messages = render_extended_error_message_list(extended_error)
-    msgcnt = 0
-    for msg in messages:
-        print('\t' + msg)
-        msgcnt += 1
-    if msgcnt == 0: # add a spacer
-        print

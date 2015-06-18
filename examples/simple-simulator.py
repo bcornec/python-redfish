@@ -8,7 +8,7 @@ password = 'password'
 redfish.setLogFile("/var/log/python-redfish/python-refish-simulator.log")
 
 ''' remoteMgmt is a redfish.RedfishConnection object '''
-remoteMgmt = redfish.connect(url, user_name, password, simulator=True)
+remoteMgmt = redfish.connect(url, user_name, password, simulator=True, enforceSSL=False)
 
 print ("Redfish API version : %s \n" % remoteMgmt.getApiVersion()) 
 print ("UUID : %s \n" % remoteMgmt.getApiUUID())

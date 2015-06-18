@@ -8,7 +8,6 @@ password = 'password'
 remoteMgmt = redfish.connect(url, user_name, password, verifyCert=False)
 
 print ("Redfish API version : %s \n" % remoteMgmt.getApiVersion()) 
-#print ("UUID : %s \n" % remoteMgmt.getApiUUID())
 
-#print remoteMgmt.getApiLinkToServer()
+remoteMgmt.logout()
 
