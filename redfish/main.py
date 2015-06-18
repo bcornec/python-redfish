@@ -125,43 +125,60 @@ import StringIO
 import sys
 import tortilla
 import logging
-#from urllib2 import *
 from urlparse import urlparse
 from logging.handlers import RotatingFileHandler
 #from oslo_log import log as logging
+
+''' Global variable definition'''
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s :: %(levelname)s :: %(message)s')
-file_handler = RotatingFileHandler('/home/uggla/python-redfish/python-redfish.log', 'a', 1000000, 1)
+logFile="/var/log/python-redfish/python-redfish.log"
 
-# First logger to file
-file_handler.setLevel(logging.DEBUG)
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
+#===============================================================================
+# TODO : create method to set logging level and tortillaDebug.
+#===============================================================================
+tortillaDebug = True
 
-# Second logger to console
-steam_handler = logging.StreamHandler()
-steam_handler.setLevel(logging.DEBUG)
-logger.addHandler(steam_handler)
+
+def initializeLogger(logFile):
+    global logger
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s :: %(levelname)s :: %(message)s')
+    file_handler = RotatingFileHandler(logFile, 'a', 1000000, 1)
+
+    # First logger to file
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    # Second logger to console
+    steam_handler = logging.StreamHandler()
+    steam_handler.setLevel(logging.DEBUG)
+    logger.addHandler(steam_handler)
+    return True
+    
 #from redfish import exception
 #from redfish import types
 
 
 #LOG = logging.getLogger('redfish')
-
-
+def setLogFile(file):
+    global logFile
+    logFile=file
+    return True
 
 
 """ Function to wrap RedfishConnection """
-def connect(url, user, password):
-    return RedfishConnection(url, user, password, simulator=True)
+def connect(url, user, password, simulator=False, enforceSSL=True, verifyCert=True):
+    global logFile
+    initializeLogger(logFile)
+    return RedfishConnection(url, user, password, simulator=simulator, enforceSSL=enforceSSL, verifyCert=verifyCert)
 
 
 class RedfishConnection(object):
     """Implements basic connection handling for Redfish APIs."""
 
-    def __init__(self, url, user_name, password, simulator, 
-                 auth_token=None, enforce_SSL=True):
+    def __init__(self, url, user_name, password, simulator=False, 
+                  enforceSSL=True, verifyCert=True):
         """Initialize a connection to a Redfish service."""
         super(RedfishConnection, self).__init__()
 
@@ -170,23 +187,26 @@ class RedfishConnection(object):
         self.url = url
         self.user_name = user_name
         self.password = password
-        self.simulator = simulator
         
-        self.auth_token = auth_token
-        self.enforce_SSL = enforce_SSL
+        self.simulator = simulator
+        self.enforce_SSL = enforceSSL
+        self.verifyCert = verifyCert
 
         # context for the last status and header returned from a call
         self.status = None
         self.headers = None
+        self.auth_token = None
+        
+        rootUrl = urlparse(url)
+        
+        # Enforce ssl
+        if self.enforce_SSL == True:
+            rootUrl = rootUrl._replace(scheme = "https")
 
-        # If the http schema wasn't specified, default to HTTPS
-        #if url[0:4] != 'http':
-        #    url = 'https://' + url
-        
-        
-        
-        self.apiUrl = tortilla.wrap(url)
-        self.root = self.apiUrl.get(verify=False)
+        logger.debug("Root url : %s", rootUrl.geturl())            
+        self.apiUrl = tortilla.wrap(rootUrl.geturl(), debug=tortillaDebug)
+        self.root = self.apiUrl.get(verify=self.verifyCert)
+        exit()
         
         
     #===========================================================================
