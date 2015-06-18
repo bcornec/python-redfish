@@ -124,6 +124,7 @@ import ssl
 import StringIO
 import sys
 import tortilla
+import requests
 import logging
 from urlparse import urlparse
 from logging.handlers import RotatingFileHandler
@@ -189,7 +190,7 @@ class RedfishConnection(object):
         self.password = password
         
         self.simulator = simulator
-        self.enforce_SSL = enforceSSL
+        self.enforceSSL = enforceSSL
         self.verifyCert = verifyCert
 
         # context for the last status and header returned from a call
@@ -200,13 +201,17 @@ class RedfishConnection(object):
         rootUrl = urlparse(url)
         
         # Enforce ssl
-        if self.enforce_SSL == True:
+        if self.enforceSSL == True:
             rootUrl = rootUrl._replace(scheme = "https")
 
         logger.debug("Root url : %s", rootUrl.geturl())            
         self.apiUrl = tortilla.wrap(rootUrl.geturl(), debug=tortillaDebug)
         self.root = self.apiUrl.get(verify=self.verifyCert)
-        exit()
+        
+        if self.simulator == False:
+            self.login()
+        
+        
         
         
     #===========================================================================
@@ -251,6 +256,25 @@ class RedfishConnection(object):
 
     def getApiLinkToServer(self):
         return getattr(self.root.Links.Systems,"@odata.id") 
+    
+    
+    def login(self):
+        # Craft request body
+        requestBody = {"UserName":self.user_name,"Password":self.password}
+        
+        #=======================================================================
+        # Tortilla seems not able to provide the header of a post request answer.
+        # However this is required by redfish standard to get X-Auth-Token.
+        # So jump to "requests" library to get the required token. 
+        #=======================================================================
+        
+        
+        
+        #sessionsUrl = tortilla.wrap("https://10.3.222.104/rest/v1/Sessions", debug=tortillaDebug)
+        #sessions = sessionsUrl.post(verify=self.verifyCert, data=requestBody)
+       
+        
+        
     
 
     def _connect(self):
