@@ -12,8 +12,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-
-
 """
 STARTING ASSUMPTIONS
 
@@ -125,21 +123,30 @@ from urlparse import urlparse
 from logging.handlers import RotatingFileHandler
 
 
-''' Global variable definition'''
+# Global variable definition
 logger = logging.getLogger()
-logFile="/var/log/python-redfish/python-redfish.log"
+redfish_logfile = "/var/log/python-redfish/python-redfish.log"
 
-#===============================================================================
-# TODO : create method to set logging level and tortillaDebug.
-#===============================================================================
-tortillaDebug = True
+# ===============================================================================
+# TODO : create method to set logging level and TORTILLADEBUG.
+# ===============================================================================
+TORTILLADEBUG = True
 
 
-def initializeLogger(logFile):
+def initialize_logger(redfish_logfile):
+    """Return api version.
+
+    :param redfish_logfile: redfish log
+    :type str
+    :returns:  True
+
+    """
     global logger
     logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s :: %(levelname)s :: %(message)s')
-    file_handler = RotatingFileHandler(logFile, 'a', 1000000, 1)
+    formatter = logging.Formatter(
+        '%(asctime)s :: %(levelname)s :: %(message)s'
+        )
+    file_handler = RotatingFileHandler(redfish_logfile, 'a', 1000000, 1)
 
     # First logger to file
     file_handler.setLevel(logging.DEBUG)
@@ -153,61 +160,84 @@ def initializeLogger(logFile):
     return True
 
 
-def setLogFile(logfile):
-    global logFile
-    logFile=logfile
+def set_log_file(logfile):
+    global redfish_logfile
+    redfish_logfile = logfile
     return True
 
 
 """ Function to wrap RedfishConnection """
-def connect(url, user, password, simulator=False, enforceSSL=True, verifyCert=True):
-    global logFile
-    initializeLogger(logFile)
-    return RedfishConnection(url, user, password, simulator=simulator, enforceSSL=enforceSSL, verifyCert=verifyCert)
+
+
+def connect(
+        url,
+        user,
+        password,
+        simulator=False,
+        enforceSSL=True,
+        verify_cert=True
+    ):
+    global redfish_logfile
+    initialize_logger(redfish_logfile)
+    return RedfishConnection(
+        url,
+        user,
+        password,
+        simulator=simulator,
+        enforceSSL=enforceSSL,
+        verify_cert=verify_cert
+    )
 
 
 class RedfishConnection(object):
     """Implements basic connection handling for Redfish APIs."""
 
-    def __init__(self, url, user_name, password, simulator=False, 
-                  enforceSSL=True, verifyCert=True):
+    def __init__(self,
+                 url,
+                 user_name,
+                 password,
+                 simulator=False,
+                 enforceSSL=True,
+                 verify_cert=True
+                ):
         """Initialize a connection to a Redfish service."""
         super(RedfishConnection, self).__init__()
 
-        logger.info('Initialize python-redfish')
-        
+        logger.info("Initialize python-redfish")
+
         self.url = url
         self.user_name = user_name
         self.password = password
-        
+
         self.simulator = simulator
         self.enforceSSL = enforceSSL
-        self.verifyCert = verifyCert
+        self.verify_cert = verify_cert
 
-        # Session attributes 
+        # Session attributes
         self.auth_token = None
         self.userUri = None
-        
+
         rootUrl = urlparse(url)
-        
+
         # Enforce ssl
-        if self.enforceSSL == True:
+        if self.enforceSSL is True:
             logger.debug("Enforcing SSL")
-            rootUrl = rootUrl._replace(scheme = "https")
-            
+            rootUrl = rootUrl._replace(scheme="https")
+
         # Verify cert
-        if self.verifyCert == False:
-            logger.info("Certificat is not checked, this is insecure and can allow a man in the middle attack")    
-            
-            
-        logger.debug("Root url : %s", rootUrl.geturl())            
-        self.apiUrl = tortilla.wrap(rootUrl.geturl(), debug=tortillaDebug)
-        self.root = self.apiUrl.get(verify=self.verifyCert)
-        
-        self.version = self.getApiVersion()
+        if self.verify_cert is False:
+            logger.info("Certificat is not checked, " +
+                        "this is insecure and can allow" +
+                        " a man in the middle attack")
+
+        logger.debug("Root url : %s", rootUrl.geturl())
+        self.apiUrl = tortilla.wrap(rootUrl.geturl(), debug=TORTILLADEBUG)
+        self.root = self.apiUrl.get(verify=self.verify_cert)
+
+        self.version = self.get_api_version()
         logger.debug("API Version : %s", self.version)
-        
-        if self.simulator == False:
+
+        if self.simulator is False:
             try:
                 logger.info("Login to %s", rootUrl.netloc)
                 self.login()
@@ -215,91 +245,102 @@ class RedfishConnection(object):
             except "Error getting token":
                 logger.error("Login fail, error getting token")
                 sys.exit(1)
-     
-       
-       
-        
-    #===========================================================================
+
+    # ========================================================================
     #     systemCollectionLink = getattr(self.root.Links.Systems,"@odata.id")
     #     self.systemCollection = self.apiUrl.redfish.v1.Systems.get()
-    #     
+    #
     #     print self.systemCollection.Name
-    # 
-    #===========================================================================
-     
-       
-    
-        
-    def getApiVersion(self):
+    #
+    # ========================================================================
+
+    def get_api_version(self):
+        """Return api version.
+
+        :returns:  string -- version
+        :raises: AttributeError
+
+        """
         try:
             version = self.root.RedfishVersion
         except AttributeError:
             version = self.root.ServiceVersion
         return(version)
-        
-       
-    def getApiUUID(self):
+
+    def get_api_UUID(self):
+        """Return api UUID.
+
+        :returns:  string -- UUID
+
+        """
         return self.root.UUID
 
-    def getApiLinkToServer(self):
-        return getattr(self.root.Links.Systems,"@odata.id") 
-    
-   
+    def get_api_link_to_server(self):
+        """Return api link to server.
+
+        :returns:  string -- path
+
+        """
+        return getattr(self.root.Links.Systems, "@odata.id")
+
     def login(self):
         # Craft full url
-        urlpath = UrlPathMapper()     
-        url = self.url + urlpath.mapSessions(self.version) 
-        
+        urlpath = UrlPathMapper()
+        url = self.url + urlpath.map_sessions(self.version)
+
         # Craft request body and header
-        requestBody = {"UserName":self.user_name,"Password":self.password}
+        requestBody = {"UserName": self.user_name, "Password": self.password}
         header = {'Content-type': 'application/json'}
-        #=======================================================================
+        # =======================================================================
         # Tortilla seems not able to provide the header of a post request answer.
         # However this is required by redfish standard to get X-Auth-Token.
         # So jump to "requests" library to get the required token.
         # TODO : Patch tortilla to handle this case.
-        #=======================================================================     
-        #sessionsUrl = tortilla.wrap("https://10.3.222.104/rest/v1/Sessions", debug=tortillaDebug)
-        #sessions = sessionsUrl.post(verify=self.verifyCert, data=requestBody)
-       
-        auth = requests.post(url, data = json.dumps(requestBody), headers=header, verify=self.verifyCert)
-        
+        # =======================================================================
+        # sessionsUrl = tortilla.wrap("https://10.3.222.104/rest/v1/Sessions", debug=TORTILLADEBUG)
+        # sessions = sessionsUrl.post(verify=self.verify_cert, data=requestBody)
+
+        auth = requests.post(url,
+                             data=json.dumps(requestBody),
+                             headers=header,
+                             verify=self.verify_cert
+                            )
+
         if auth.status_code != 201:
             raise "Error getting token", auth.status_code
-        
+
         self.auth_token = auth.headers.get("x-auth-token")
         self.userUri = auth.headers.get("location")
         logger.debug("x-auth-token : %s", self.auth_token)
         logger.debug("user session : %s", self.userUri)
         return True
-        
+
     def logout(self):
         # Craft full url
         url = self.userUri
-        
+
         # Craft request header
-        header = {'Content-type': 'application/json', 'x-auth-token':self.auth_token}
-        
-        logout = requests.delete(url, headers=header, verify=self.verifyCert)
-        
+        header = {"Content-type": "application/json",
+                  "x-auth-token": self.auth_token
+                 }
+
+        logout = requests.delete(url, headers=header, verify=self.verify_cert)
+
         if logout.status_code == 200:
             logger.info("Logout successful")
         else:
             logger.error("Logout failed")
             sys.exit(1)
-    
+
+
 class UrlPathMapper(object):
     """Implements basic url path mapping beetween Redfish versions."""
-    
+
     def __init__(self):
         pass
-    
-    
-    def mapSessions(self,redfishVersion):
-        if redfishVersion == '0.9.5':
+
+    def map_sessions(self, redfishVersion):
+        if redfishVersion == "0.9.5":
             return "/Sessions"
-        if redfishVersion == '0.96.0':
+        if redfishVersion == "0.96.0":
             return "/SessionService"
-        
-        
-    

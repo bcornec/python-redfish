@@ -1,13 +1,14 @@
+""" Simple example to use python-redfish on HP Proliant servers """
+
 import redfish
 
-url = 'http://10.3.222.104/rest/v1'
-user_name = 'demopaq'
-password = 'password'
+URL = 'http://10.3.222.104/rest/v1'
+USER_NAME = 'demopaq'
+PASSWORD = 'password'
 
-''' remoteMgmt is a redfish.RedfishConnection object '''
-remoteMgmt = redfish.connect(url, user_name, password, verifyCert=False)
+''' remote_mgmt is a redfish.RedfishConnection object '''
+remote_mgmt = redfish.connect(URL, USER_NAME, PASSWORD, verify_cert=False)
 
-print ("Redfish API version : %s \n" % remoteMgmt.getApiVersion()) 
+print ("Redfish API version : %s \n" % remote_mgmt.get_api_version())
 
-remoteMgmt.logout()
-
+remote_mgmt.logout()
