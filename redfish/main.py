@@ -114,6 +114,8 @@ Clients should always be prepared for:
 
 """
 
+# coding=utf-8
+
 import json
 import sys
 import tortilla
@@ -121,7 +123,7 @@ import requests
 import logging
 from urlparse import urlparse
 from logging.handlers import RotatingFileHandler
-
+import types
 
 # Global variable definition
 logger = logging.getLogger()
@@ -131,7 +133,6 @@ redfish_logfile = "/var/log/python-redfish/python-redfish.log"
 # TODO : create method to set logging level and TORTILLADEBUG.
 # ===============================================================================
 TORTILLADEBUG = True
-
 
 def initialize_logger(redfish_logfile):
     """Return api version.
@@ -246,6 +247,23 @@ class RedfishConnection(object):
                 logger.error("Login fail, error getting token")
                 sys.exit(1)
 
+        # Connection dict
+        connection_parameters = {"verify_cert": self.verify_cert,
+                                 "auth_token": self.auth_token,
+                                 "redfish_version": self.version
+                                }
+
+        # Types
+        self.Managers = types.ManagersCollection(self.url + "/Managers", self.verify_cert, self.auth_token)
+#         self.Chassis
+#         self.Systems
+#         self.EventService
+#         self.AccountService
+#         self.Tasks
+
+
+
+
     # ========================================================================
     #     systemCollectionLink = getattr(self.root.Links.Systems,"@odata.id")
     #     self.systemCollection = self.apiUrl.redfish.v1.Systems.get()
@@ -305,7 +323,9 @@ class RedfishConnection(object):
                              headers=header,
                              verify=self.verify_cert
                             )
-
+        # =======================================================================
+        # TODO : Manage exception with a class.
+        # =======================================================================
         if auth.status_code != 201:
             raise "Error getting token", auth.status_code
 

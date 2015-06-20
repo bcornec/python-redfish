@@ -1,3 +1,5 @@
+# coding=utf-8
+
 """ Simple example to use python-redfish with DMTF simulator """
 
 import redfish

@@ -1,3 +1,5 @@
+# coding=utf-8
+
 """ Simple example to use python-redfish on HP Proliant servers """
 
 import redfish
