@@ -118,7 +118,6 @@ Clients should always be prepared for:
 
 import json
 import sys
-import tortilla
 import requests
 import logging
 from urlparse import urlparse
@@ -195,7 +194,7 @@ class RedfishConnection(object):
 
     def __init__(self,
                  url,
-                 user_name,
+                 user,
                  password,
                  simulator=False,
                  enforceSSL=True,
@@ -206,41 +205,48 @@ class RedfishConnection(object):
 
         logger.info("Initialize python-redfish")
 
-        self.url = url
-        self.user_name = user_name
-        self.password = password
-
-        self.simulator = simulator
-        self.enforceSSL = enforceSSL
-        self.verify_cert = verify_cert
-
+        connection_parameters = ConnectionParameters()
+        connection_parameters.rooturl = url
+        connection_parameters.user_name = user
+        connection_parameters.password = password
+        connection_parameters.enforceSSL = enforceSSL
+        connection_parameters.verify_cert = verify_cert
+        
+        # Use DMTF mockup or not
+        self.__simulator = simulator
+    
         # Session attributes
-        self.auth_token = None
-        self.userUri = None
-
-        rootUrl = urlparse(url)
+        connection_parameters.auth_token = None
+        connection_parameters.user_uri = None
+        
+        rooturl = urlparse(connection_parameters.rooturl)
 
         # Enforce ssl
-        if self.enforceSSL is True:
+        if connection_parameters.enforceSSL is True:
             logger.debug("Enforcing SSL")
-            rootUrl = rootUrl._replace(scheme="https")
+            rooturl = rooturl._replace(scheme="https")
+            connection_parameters.rooturl = rooturl.geturl()
 
         # Verify cert
-        if self.verify_cert is False:
+        if connection_parameters.verify_cert is False:
             logger.info("Certificat is not checked, " +
                         "this is insecure and can allow" +
                         " a man in the middle attack")
 
-        logger.debug("Root url : %s", rootUrl.geturl())
-        self.apiUrl = tortilla.wrap(rootUrl.geturl(), debug=TORTILLADEBUG)
-        self.root = self.apiUrl.get(verify=self.verify_cert)
+        logger.debug("Root url : %s", connection_parameters.rooturl)
+        self.Root = types.Root(connection_parameters.rooturl,
+                         connection_parameters
+                        )
+        #self.api_url = tortilla.wrap(connection_parameters.rooturl,
+        #                             debug=TORTILLADEBUG)
+        #self.root = self.api_url.get(verify=connection_parameters.verify_cert)
 
-        self.version = self.get_api_version()
-        logger.debug("API Version : %s", self.version)
+        logger.debug("API Version : %s", self.get_api_version())
+        sys.exit(0)
 
         if self.simulator is False:
             try:
-                logger.info("Login to %s", rootUrl.netloc)
+                logger.info("Login to %s", rooturl.netloc)
                 self.login()
                 logger.info("Login successful")
             except "Error getting token":
@@ -249,12 +255,12 @@ class RedfishConnection(object):
 
         # Connection dict
         connection_parameters = {"verify_cert": self.verify_cert,
-                                 "auth_token": self.auth_token,
+                                 "user_uri": self.user_uri,
                                  "redfish_version": self.version
                                 }
 
         # Types
-        self.Managers = types.ManagersCollection(self.url + "/Managers", self.verify_cert, self.auth_token)
+        self.Managers = types.ManagersCollection(self.url + "/Managers", self.verify_cert, self.user_uri)
 #         self.Chassis
 #         self.Systems
 #         self.EventService
@@ -270,8 +276,7 @@ class RedfishConnection(object):
     #
     #     print self.systemCollection.Name
     #
-    # ========================================================================
-
+    # ========================================================================    
     def get_api_version(self):
         """Return api version.
 
@@ -279,11 +284,7 @@ class RedfishConnection(object):
         :raises: AttributeError
 
         """
-        try:
-            version = self.root.RedfishVersion
-        except AttributeError:
-            version = self.root.ServiceVersion
-        return(version)
+        return (self.Root.get_api_version())
 
     def get_api_UUID(self):
         """Return api UUID.
@@ -307,7 +308,7 @@ class RedfishConnection(object):
         url = self.url + urlpath.map_sessions(self.version)
 
         # Craft request body and header
-        requestBody = {"UserName": self.user_name, "Password": self.password}
+        requestBody = {"UserName": self.enforceSSL, "Password": self.password}
         header = {'Content-type': 'application/json'}
         # =======================================================================
         # Tortilla seems not able to provide the header of a post request answer.
@@ -329,9 +330,9 @@ class RedfishConnection(object):
         if auth.status_code != 201:
             raise "Error getting token", auth.status_code
 
-        self.auth_token = auth.headers.get("x-auth-token")
+        self.user_uri = auth.headers.get("x-auth-token")
         self.userUri = auth.headers.get("location")
-        logger.debug("x-auth-token : %s", self.auth_token)
+        logger.debug("x-auth-token : %s", self.user_uri)
         logger.debug("user session : %s", self.userUri)
         return True
 
@@ -341,7 +342,7 @@ class RedfishConnection(object):
 
         # Craft request header
         header = {"Content-type": "application/json",
-                  "x-auth-token": self.auth_token
+                  "x-auth-token": self.user_uri
                  }
 
         logout = requests.delete(url, headers=header, verify=self.verify_cert)
@@ -364,3 +365,68 @@ class UrlPathMapper(object):
             return "/Sessions"
         if redfishVersion == "0.96.0":
             return "/SessionService"
+        
+        
+class ConnectionParameters(object):
+    """Store connection parameters."""
+
+    def __init__(self):
+        pass
+          
+    @property
+    def rooturl(self):
+        return self.__rooturl
+        
+    @rooturl.setter
+    def rooturl(self, rooturl):
+        self.__rooturl = rooturl
+        
+    @property
+    def user_name(self):
+        return self.__user_name
+        
+    @user_name.setter
+    def user_name(self, user_name):
+        self.__user_name = user_name
+      
+    @property
+    def password(self):
+        return self.__password
+        
+    @password.setter
+    def password(self, password):
+        self.__password = password
+        
+    @property
+    def enforceSSL(self):
+        return self.__enforceSSL
+        
+    @enforceSSL.setter
+    def enforceSSL(self, enforceSSL):
+        self.__enforceSSL = enforceSSL
+        
+    @property
+    def verify_cert(self):
+        return self.__verify_cert
+        
+    @verify_cert.setter
+    def verify_cert(self, verify_cert):
+        self.__verify_cert = verify_cert
+    
+    @property
+    def auth_token(self):
+        return self.__auth_token
+        
+    @auth_token.setter
+    def auth_token(self, auth_token):
+        self.__auth_token = auth_token
+    
+    @property
+    def user_uri(self):
+        return self.__user_uri
+        
+    @user_uri.setter
+    def user_uri(self, user_uri):
+        self.__user_uri = user_uri
+
+ 
