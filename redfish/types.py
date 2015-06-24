@@ -2,7 +2,7 @@
 
 import tortilla
 import pprint
-
+from urlparse import urljoin
 
 
 # Global variable
@@ -14,6 +14,7 @@ class Base(object):
     def __init__(self, url, connection_parameters):
         
         global TORTILLADEBUG
+        self.__url = url
         self.api_url = tortilla.wrap(url, debug=TORTILLADEBUG)
         
         if connection_parameters.auth_token == None:
@@ -23,6 +24,14 @@ class Base(object):
                                          headers={'x-auth-token': connection_parameters.auth_token}
                                         )
         print self.data
+    
+    def get_link_url(self, link_type, redfish_mapper):
+        self.links=[]
+        #links = self.data.links
+        links = getattr(self.data, redfish_mapper.map_links())
+        if link_type in links:
+            return  urljoin(self.__url, links[link_type][redfish_mapper.map_links_ref()])
+    
     
 class BaseCollection(Base):
     """Abstract class to manage types (Chassis, Servers etc...)."""
@@ -56,7 +65,23 @@ class Root(Base):
         except AttributeError:
             version = self.data.ServiceVersion
         return(version)
+    
+    def get_api_UUID(self):
+        return self.data.UUID
+    
+    
+    def get_api_link_to_server(self):
+        """Return api link to server.
 
+        :returns:  string -- path
+
+        """
+        return getattr(self.root.Links.Systems, "@odata.id")
+
+
+
+class SessionService(Base):
+    pass
 
 class Managers(Base):
     pass

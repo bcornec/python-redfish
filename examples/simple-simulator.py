@@ -16,6 +16,6 @@ remoteMgmt = redfish.connect(URL, USER_NAME, PASSWORD,
                              simulator=True, enforceSSL=False)
 
 print ("Redfish API version : %s \n" % remoteMgmt.get_api_version())
-print ("UUID : %s \n" % remoteMgmt.get_api_UUID())
+print ("UUID : %s \n" % remoteMgmt.Root.get_api_UUID())
 
-print remoteMgmt.get_api_link_to_server()
+#print remoteMgmt.get_api_link_to_server()

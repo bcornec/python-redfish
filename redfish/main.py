@@ -123,6 +123,7 @@ import logging
 from urlparse import urlparse
 from logging.handlers import RotatingFileHandler
 import types
+import mapping
 
 # Global variable definition
 logger = logging.getLogger()
@@ -205,46 +206,49 @@ class RedfishConnection(object):
 
         logger.info("Initialize python-redfish")
 
-        connection_parameters = ConnectionParameters()
-        connection_parameters.rooturl = url
-        connection_parameters.user_name = user
-        connection_parameters.password = password
-        connection_parameters.enforceSSL = enforceSSL
-        connection_parameters.verify_cert = verify_cert
+        self.connection_parameters = ConnectionParameters()
+        self.connection_parameters.rooturl = url
+        self.connection_parameters.user_name = user
+        self.connection_parameters.password = password
+        self.connection_parameters.enforceSSL = enforceSSL
+        self.connection_parameters.verify_cert = verify_cert
         
         # Use DMTF mockup or not
         self.__simulator = simulator
     
         # Session attributes
-        connection_parameters.auth_token = None
-        connection_parameters.user_uri = None
+        self.connection_parameters.auth_token = None
+        self.connection_parameters.user_uri = None
         
-        rooturl = urlparse(connection_parameters.rooturl)
+        rooturl = urlparse(self.connection_parameters.rooturl)
 
         # Enforce ssl
-        if connection_parameters.enforceSSL is True:
+        if self.connection_parameters.enforceSSL is True:
             logger.debug("Enforcing SSL")
             rooturl = rooturl._replace(scheme="https")
-            connection_parameters.rooturl = rooturl.geturl()
+            self.connection_parameters.rooturl = rooturl.geturl()
 
         # Verify cert
-        if connection_parameters.verify_cert is False:
+        if self.connection_parameters.verify_cert is False:
             logger.info("Certificat is not checked, " +
                         "this is insecure and can allow" +
                         " a man in the middle attack")
 
-        logger.debug("Root url : %s", connection_parameters.rooturl)
-        self.Root = types.Root(connection_parameters.rooturl,
-                         connection_parameters
+        logger.debug("Root url : %s", self.connection_parameters.rooturl)
+        self.Root = types.Root(self.connection_parameters.rooturl,
+                         self.connection_parameters
                         )
-        #self.api_url = tortilla.wrap(connection_parameters.rooturl,
+        #self.api_url = tortilla.wrap(self.connection_parameters.rooturl,
         #                             debug=TORTILLADEBUG)
-        #self.root = self.api_url.get(verify=connection_parameters.verify_cert)
+        #self.root = self.api_url.get(verify=self.connection_parameters.verify_cert)
 
         logger.debug("API Version : %s", self.get_api_version())
-        sys.exit(0)
-
-        if self.simulator is False:
+        
+        # Instanciate a mapping object to handle Redfish version variation
+        self.redfish_mapper = mapping.RedfishVersionMapping(self.get_api_version()) 
+        
+        # Now we need to login otherwise we are not allowed to extract data
+        if self.__simulator is False:
             try:
                 logger.info("Login to %s", rooturl.netloc)
                 self.login()
@@ -253,14 +257,18 @@ class RedfishConnection(object):
                 logger.error("Login fail, error getting token")
                 sys.exit(1)
 
-        # Connection dict
-        connection_parameters = {"verify_cert": self.verify_cert,
-                                 "user_uri": self.user_uri,
-                                 "redfish_version": self.version
-                                }
 
         # Types
-        self.Managers = types.ManagersCollection(self.url + "/Managers", self.verify_cert, self.user_uri)
+        self.SessionService = types.SessionService(
+                                        self.Root.get_link_url(
+                                            self.redfish_mapper.map_sessionservice(),
+                                            self.redfish_mapper),
+                                        self.connection_parameters
+                                                   )
+        
+        
+        
+        #self.Managers = types.ManagersCollection(self.url + "/Managers", self.verify_cert, self.user_uri)
 #         self.Chassis
 #         self.Systems
 #         self.EventService
@@ -286,29 +294,15 @@ class RedfishConnection(object):
         """
         return (self.Root.get_api_version())
 
-    def get_api_UUID(self):
-        """Return api UUID.
-
-        :returns:  string -- UUID
-
-        """
-        return self.root.UUID
-
-    def get_api_link_to_server(self):
-        """Return api link to server.
-
-        :returns:  string -- path
-
-        """
-        return getattr(self.root.Links.Systems, "@odata.id")
-
     def login(self):
         # Craft full url
-        urlpath = UrlPathMapper()
-        url = self.url + urlpath.map_sessions(self.version)
+        url = self.Root.get_link_url(
+                                    self.redfish_mapper.map_sessionservice(),
+                                    self.redfish_mapper
+                                    )
 
         # Craft request body and header
-        requestBody = {"UserName": self.enforceSSL, "Password": self.password}
+        requestBody = {"UserName": self.connection_parameters.user_name  , "Password": self.connection_parameters.password}
         header = {'Content-type': 'application/json'}
         # =======================================================================
         # Tortilla seems not able to provide the header of a post request answer.
@@ -322,30 +316,32 @@ class RedfishConnection(object):
         auth = requests.post(url,
                              data=json.dumps(requestBody),
                              headers=header,
-                             verify=self.verify_cert
+                             verify=self.connection_parameters.verify_cert
                             )
         # =======================================================================
         # TODO : Manage exception with a class.
         # =======================================================================
-        if auth.status_code != 201:
-            raise "Error getting token", auth.status_code
+        #if auth.status_code != 201:
+            #raise "Error getting token", auth.status_code
 
-        self.user_uri = auth.headers.get("x-auth-token")
-        self.userUri = auth.headers.get("location")
-        logger.debug("x-auth-token : %s", self.user_uri)
-        logger.debug("user session : %s", self.userUri)
+        self.connection_parameters.auth_token = auth.headers.get("x-auth-token")
+        self.connection_parameters.user_uri = auth.headers.get("location")
+        logger.debug("x-auth-token : %s", self.connection_parameters.auth_token)
+        logger.debug("user session : %s", self.connection_parameters.user_uri)
         return True
 
     def logout(self):
         # Craft full url
-        url = self.userUri
+        url = self.connection_parameters.user_uri
 
         # Craft request header
         header = {"Content-type": "application/json",
-                  "x-auth-token": self.user_uri
+                  "x-auth-token": self.connection_parameters.auth_token
                  }
 
-        logout = requests.delete(url, headers=header, verify=self.verify_cert)
+        logout = requests.delete(url, headers=header,
+                                 verify=self.connection_parameters.verify_cert
+                                )
 
         if logout.status_code == 200:
             logger.info("Logout successful")
@@ -353,20 +349,7 @@ class RedfishConnection(object):
             logger.error("Logout failed")
             sys.exit(1)
 
-
-class UrlPathMapper(object):
-    """Implements basic url path mapping beetween Redfish versions."""
-
-    def __init__(self):
-        pass
-
-    def map_sessions(self, redfishVersion):
-        if redfishVersion == "0.9.5":
-            return "/Sessions"
-        if redfishVersion == "0.96.0":
-            return "/SessionService"
-        
-        
+               
 class ConnectionParameters(object):
     """Store connection parameters."""
 
