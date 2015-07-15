@@ -1,9 +1,9 @@
 # coding=utf-8
 
-import tortilla
 import pprint
 from urlparse import urljoin
-
+import tortilla
+import mapping
 
 # Global variable
 TORTILLADEBUG = True
@@ -24,30 +24,30 @@ class Base(object):
                                         )
         print self.data
 
-    def get_link_url(self, link_type, redfish_mapper):
+    def get_link_url(self, link_type):
         self.links=[]
         #links = self.data.links
-        links = getattr(self.data, redfish_mapper.map_links())
+        links = getattr(self.data, mapping.redfish_mapper.map_links())
         if link_type in links:
-            return  urljoin(self.__url, links[link_type][redfish_mapper.map_links_ref()])
+            return  urljoin(self.__url, links[link_type][mapping.redfish_mapper.map_links_ref()])
 
 
 class BaseCollection(Base):
     """Abstract class to manage types (Chassis, Servers etc...)."""
 
-    def __init__(self, url, connection_parameters, redfish_mapper):
+    def __init__(self, url, connection_parameters):
         super(BaseCollection, self).__init__(url, connection_parameters)
 
         self.links=[]
 
         #linksmembers = self.data.Links.Members
         #linksmembers = self.data.links.Member
-        linksmembers = getattr(self.data, redfish_mapper.map_links())
-        linksmembers = getattr(linksmembers, redfish_mapper.map_members())
+        linksmembers = getattr(self.data, mapping.redfish_mapper.map_links())
+        linksmembers = getattr(linksmembers, mapping.redfish_mapper.map_members())
         for link in linksmembers:
             #self.links.append(getattr(link,"@odata.id"))
             #self.links.append(getattr(link,"href"))
-            self.links.append(getattr(link, redfish_mapper.map_links_ref()))
+            self.links.append(getattr(link, mapping.redfish_mapper.map_links_ref()))
         print self.links
 
 

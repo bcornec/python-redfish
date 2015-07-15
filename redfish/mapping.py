@@ -1,5 +1,7 @@
 # coding=utf-8
 
+redfish_mapper = None
+
 class RedfishVersionMapping(object):
     """Implements basic url path mapping beetween Redfish versions."""
 

@@ -244,8 +244,8 @@ class RedfishConnection(object):
 
         logger.debug("API Version : %s", self.get_api_version())
 
-        # Instanciate a mapping object to handle Redfish version variation
-        self.redfish_mapper = mapping.RedfishVersionMapping(self.get_api_version())
+        # Instanciate a global mapping object to handle Redfish version variation
+        mapping.redfish_mapper = mapping.RedfishVersionMapping(self.get_api_version())
 
         # Now we need to login otherwise we are not allowed to extract data
         if self.__simulator is False:
@@ -261,17 +261,14 @@ class RedfishConnection(object):
         # Types
         self.SessionService = types.SessionService(
                                         self.Root.get_link_url(
-                                            self.redfish_mapper.map_sessionservice(),
-                                            self.redfish_mapper),
+                                            mapping.redfish_mapper.map_sessionservice()),
                                         self.connection_parameters
                                                    )
 
         #self.Managers = types.ManagersCollection(self.connection_parameters.rooturl + "/Managers", self.connection_parameters)
-        self.Managers = types.ManagersCollection(self.Root.get_link_url(
-                                                        "Managers",
-                                                        self.redfish_mapper),
-                                                 self.connection_parameters,
-                                                 self.redfish_mapper)
+        self.Managers = types.ManagersCollection(self.Root.get_link_url("Managers"),
+                                                 self.connection_parameters
+                                                 )
 #         self.Chassis
 #         self.Systems
 #         self.EventService
@@ -300,8 +297,7 @@ class RedfishConnection(object):
     def login(self):
         # Craft full url
         url = self.Root.get_link_url(
-                                    self.redfish_mapper.map_sessionservice(),
-                                    self.redfish_mapper
+                                    mapping.redfish_mapper.map_sessionservice()
                                     )
 
         # Craft request body and header
