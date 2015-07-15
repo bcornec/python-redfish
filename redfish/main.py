@@ -212,14 +212,14 @@ class RedfishConnection(object):
         self.connection_parameters.password = password
         self.connection_parameters.enforceSSL = enforceSSL
         self.connection_parameters.verify_cert = verify_cert
-        
+
         # Use DMTF mockup or not
         self.__simulator = simulator
-    
+
         # Session attributes
         self.connection_parameters.auth_token = None
         self.connection_parameters.user_uri = None
-        
+
         rooturl = urlparse(self.connection_parameters.rooturl)
 
         # Enforce ssl
@@ -243,10 +243,10 @@ class RedfishConnection(object):
         #self.root = self.api_url.get(verify=self.connection_parameters.verify_cert)
 
         logger.debug("API Version : %s", self.get_api_version())
-        
+
         # Instanciate a mapping object to handle Redfish version variation
-        self.redfish_mapper = mapping.RedfishVersionMapping(self.get_api_version()) 
-        
+        self.redfish_mapper = mapping.RedfishVersionMapping(self.get_api_version())
+
         # Now we need to login otherwise we are not allowed to extract data
         if self.__simulator is False:
             try:
@@ -265,10 +265,13 @@ class RedfishConnection(object):
                                             self.redfish_mapper),
                                         self.connection_parameters
                                                    )
-        
-        
-        
-        #self.Managers = types.ManagersCollection(self.url + "/Managers", self.verify_cert, self.user_uri)
+
+        #self.Managers = types.ManagersCollection(self.connection_parameters.rooturl + "/Managers", self.connection_parameters)
+        self.Managers = types.ManagersCollection(self.Root.get_link_url(
+                                                        "Managers",
+                                                        self.redfish_mapper),
+                                                 self.connection_parameters,
+                                                 self.redfish_mapper)
 #         self.Chassis
 #         self.Systems
 #         self.EventService
@@ -284,7 +287,7 @@ class RedfishConnection(object):
     #
     #     print self.systemCollection.Name
     #
-    # ========================================================================    
+    # ======================================================================== 
     def get_api_version(self):
         """Return api version.
 
@@ -349,67 +352,65 @@ class RedfishConnection(object):
             logger.error("Logout failed")
             sys.exit(1)
 
-               
+
 class ConnectionParameters(object):
     """Store connection parameters."""
 
     def __init__(self):
         pass
-          
+
     @property
     def rooturl(self):
         return self.__rooturl
-        
+
     @rooturl.setter
     def rooturl(self, rooturl):
         self.__rooturl = rooturl
-        
+
     @property
     def user_name(self):
         return self.__user_name
-        
+
     @user_name.setter
     def user_name(self, user_name):
         self.__user_name = user_name
-      
+
     @property
     def password(self):
         return self.__password
-        
+
     @password.setter
     def password(self, password):
         self.__password = password
-        
+
     @property
     def enforceSSL(self):
         return self.__enforceSSL
-        
+
     @enforceSSL.setter
     def enforceSSL(self, enforceSSL):
         self.__enforceSSL = enforceSSL
-        
+
     @property
     def verify_cert(self):
         return self.__verify_cert
-        
+
     @verify_cert.setter
     def verify_cert(self, verify_cert):
         self.__verify_cert = verify_cert
-    
+
     @property
     def auth_token(self):
         return self.__auth_token
-        
+
     @auth_token.setter
     def auth_token(self, auth_token):
         self.__auth_token = auth_token
-    
+
     @property
     def user_uri(self):
         return self.__user_uri
-        
+
     @user_uri.setter
     def user_uri(self, user_uri):
         self.__user_uri = user_uri
-
- 

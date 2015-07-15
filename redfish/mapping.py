@@ -23,3 +23,9 @@ class RedfishVersionMapping(object):
             return "href"
         if self.__version == "0.96.0":
             return "@odata.id"
+
+    def map_members(self):
+        if self.__version == "0.9.5":
+            return "Member"
+        if self.__version == "0.96.0":
+            return "Members"
