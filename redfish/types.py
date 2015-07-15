@@ -116,7 +116,7 @@ class ManagersCollection(BaseCollection):
 
 
 class Systems(Base):
-    def reset_server(self):
+    def reset_system(self):
         # Craft the request
         action = dict()
         action['Action'] = 'Reset'
