@@ -3,10 +3,11 @@
 import pprint
 from urlparse import urljoin
 import tortilla
+import config
 import mapping
 
 # Global variable
-TORTILLADEBUG = True
+
 
 class Base(object):
     """Abstract class to manage types (Chassis, Servers etc...)."""
@@ -14,7 +15,7 @@ class Base(object):
     def __init__(self, url, connection_parameters):
         global TORTILLADEBUG
         self.__url = url
-        self.api_url = tortilla.wrap(url, debug=TORTILLADEBUG)
+        self.api_url = tortilla.wrap(url, debug=config.TORTILLADEBUG)
 
         if connection_parameters.auth_token == None:
             self.data = self.api_url.get(verify=connection_parameters.verify_cert)

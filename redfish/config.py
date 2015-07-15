@@ -3,6 +3,8 @@
 import logging
 from logging.handlers import RotatingFileHandler
 
+# Global variable definition
+TORTILLADEBUG = True
 logger = None
 
 

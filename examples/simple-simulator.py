@@ -9,7 +9,7 @@ USER_NAME = 'Admin'
 PASSWORD = 'password'
 
 ''' Define a new log file '''
-redfish.set_log_file("/var/log/python-redfish/python-refish-simulator.log")
+redfish.set_log_file("/var/log/python-redfish/python-redfish-simulator.log")
 
 ''' remoteMgmt is a redfish.RedfishConnection object '''
 remoteMgmt = redfish.connect(URL, USER_NAME, PASSWORD,

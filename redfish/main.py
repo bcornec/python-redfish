@@ -130,7 +130,7 @@ redfish_logfile = "/var/log/python-redfish/python-redfish.log"
 # ===============================================================================
 # TODO : create method to set logging level and TORTILLADEBUG.
 # ===============================================================================
-TORTILLADEBUG = True
+
 
 def set_log_file(logfile):
     global redfish_logfile
