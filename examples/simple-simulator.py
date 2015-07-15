@@ -12,10 +12,11 @@ PASSWORD = 'password'
 redfish.set_log_file("/var/log/python-redfish/python-redfish-simulator.log")
 
 ''' remoteMgmt is a redfish.RedfishConnection object '''
-remoteMgmt = redfish.connect(URL, USER_NAME, PASSWORD,
+remote_mgmt = redfish.connect(URL, USER_NAME, PASSWORD,
                              simulator=True, enforceSSL=False)
 
-print ("Redfish API version : %s \n" % remoteMgmt.get_api_version())
-print ("UUID : %s \n" % remoteMgmt.Root.get_api_UUID())
+print ("Redfish API version : {} \n".format(remote_mgmt.get_api_version()))
+print ("UUID : {} \n".format(remote_mgmt.Root.get_api_UUID()))
+print "Bios version : {}\n".format(remote_mgmt.Systems.systems_list[0].get_bios_version())
 
 #print remoteMgmt.get_api_link_to_server()

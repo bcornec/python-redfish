@@ -116,6 +116,8 @@ class ManagersCollection(BaseCollection):
 
 
 class Systems(Base):
+    # TODO : Need to discuss with Bruno the required method.
+    #        Also to check with the ironic driver requirement.
     def reset_system(self):
         # Craft the request
         action = dict()
@@ -128,7 +130,16 @@ class Systems(Base):
                                      headers={'x-auth-token': self.connection_parameters.auth_token},
                                      data=action
                                         )
-
+        #TODO : treat response.
+        
+    def get_bios_version(self):
+        try:
+            # Returned by proliant
+            return self.data.Bios.Current.VersionString
+        except:
+            # Retuned by mockup.
+            # Hopefully this kind of discrepencies will be fixed with Redfish 1.0 (August)
+            return self.data.BiosVersion
 
 
 class SystemsCollection(BaseCollection):
