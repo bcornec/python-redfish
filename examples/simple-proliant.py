@@ -13,4 +13,7 @@ remote_mgmt = redfish.connect(URL, USER_NAME, PASSWORD, verify_cert=False)
 
 print ("Redfish API version : %s \n" % remote_mgmt.get_api_version())
 
+# Uncomment following line to reset the blade !!! 
+#remote_mgmt.Systems.systems_list[0].reset_server()
+
 remote_mgmt.logout()

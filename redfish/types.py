@@ -14,7 +14,8 @@ class Base(object):
 
     def __init__(self, url, connection_parameters):
         global TORTILLADEBUG
-        self.__url = url
+        self.connection_parameters = connection_parameters # Uggly hack to check
+        self.url = url
         self.api_url = tortilla.wrap(url, debug=config.TORTILLADEBUG)
 
         if connection_parameters.auth_token == None:
@@ -30,16 +31,25 @@ class Base(object):
         #links = self.data.links
         links = getattr(self.data, mapping.redfish_mapper.map_links())
         if link_type in links:
-            return  urljoin(self.__url, links[link_type][mapping.redfish_mapper.map_links_ref()])
+            return  urljoin(self.url, links[link_type][mapping.redfish_mapper.map_links_ref()])
+        
+    @property
+    def url(self):
+        return self.__url
+
+    @url.setter
+    def url(self, url):
+        self.__url = url
 
 
 class BaseCollection(Base):
-    """Abstract class to manage types (Chassis, Servers etc...)."""
+    """Abstract class to manage collection (Chassis, Servers etc...)."""
 
     def __init__(self, url, connection_parameters):
         super(BaseCollection, self).__init__(url, connection_parameters)
 
         self.links=[]
+        
 
         #linksmembers = self.data.Links.Members
         #linksmembers = self.data.links.Member
@@ -48,7 +58,9 @@ class BaseCollection(Base):
         for link in linksmembers:
             #self.links.append(getattr(link,"@odata.id"))
             #self.links.append(getattr(link,"href"))
-            self.links.append(getattr(link, mapping.redfish_mapper.map_links_ref()))
+            self.links.append(urljoin(self.url, getattr(link, mapping.redfish_mapper.map_links_ref())))
+
+
         print self.links
 
 
@@ -82,12 +94,49 @@ class Root(Base):
         return getattr(self.root.Links.Systems, "@odata.id")
 
 
-
 class SessionService(Base):
+    """Class to manage redfish SessionService data."""
     pass
+
 
 class Managers(Base):
     pass
 
+
 class ManagersCollection(BaseCollection):
-    pass
+    """Class to manage redfish ManagersCollection data."""
+    def __init__(self, url, connection_parameters):
+        super(ManagersCollection, self).__init__(url, connection_parameters)
+        
+        self.managers_list = []
+        
+        for link in self.links:
+            self.managers_list.append(Managers(link, connection_parameters))
+        
+
+
+class Systems(Base):
+    def reset_server(self):
+        # Craft the request
+        action = dict()
+        action['Action'] = 'Reset'
+        action['ResetType'] = 'ForceRestart'
+
+        # perform the POST action
+        print self.api_url
+        response = self.api_url.post(verify=self.connection_parameters.verify_cert,
+                                     headers={'x-auth-token': self.connection_parameters.auth_token},
+                                     data=action
+                                        )
+
+
+
+class SystemsCollection(BaseCollection):
+    """Class to manage redfish ManagersCollection data."""
+    def __init__(self, url, connection_parameters):
+        super(SystemsCollection, self).__init__(url, connection_parameters)
+        
+        self.systems_list = []
+        
+        for link in self.links:
+            self.systems_list.append(Systems(link, connection_parameters))

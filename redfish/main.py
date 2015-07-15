@@ -236,8 +236,11 @@ class RedfishConnection(object):
                                         self.connection_parameters
                                                    )
 
-        #self.Managers = types.ManagersCollection(self.connection_parameters.rooturl + "/Managers", self.connection_parameters)
         self.Managers = types.ManagersCollection(self.Root.get_link_url("Managers"),
+                                                 self.connection_parameters
+                                                 )
+        
+        self.Systems = types.SystemsCollection(self.Root.get_link_url("Systems"),
                                                  self.connection_parameters
                                                  )
 #         self.Chassis
