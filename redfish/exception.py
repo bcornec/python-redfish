@@ -6,7 +6,7 @@ class RedfishException(Exception):
     def __init__(self, message=None, **kwargs):
         self.kwargs = kwargs
         self.message = message
-        
+
 
 
 class AuthenticationException(RedfishException):

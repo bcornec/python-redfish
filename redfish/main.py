@@ -116,49 +116,20 @@ Clients should always be prepared for:
 
 # coding=utf-8
 
-import json
 import sys
-import requests
-import logging
+import json
 from urlparse import urlparse
-from logging.handlers import RotatingFileHandler
+import requests
+import config
 import types
 import mapping
 
 # Global variable definition
-logger = logging.getLogger()
 redfish_logfile = "/var/log/python-redfish/python-redfish.log"
 
 # ===============================================================================
 # TODO : create method to set logging level and TORTILLADEBUG.
 # ===============================================================================
-TORTILLADEBUG = True
-
-def initialize_logger(redfish_logfile):
-    """Return api version.
-
-    :param redfish_logfile: redfish log
-    :type str
-    :returns:  True
-
-    """
-    global logger
-    logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        '%(asctime)s :: %(levelname)s :: %(message)s'
-        )
-    file_handler = RotatingFileHandler(redfish_logfile, 'a', 1000000, 1)
-
-    # First logger to file
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-
-    # Second logger to console
-    steam_handler = logging.StreamHandler()
-    steam_handler.setLevel(logging.DEBUG)
-    logger.addHandler(steam_handler)
-    return True
 
 
 def set_log_file(logfile):
@@ -179,7 +150,7 @@ def connect(
         verify_cert=True
     ):
     global redfish_logfile
-    initialize_logger(redfish_logfile)
+    config.initialize_logger(redfish_logfile)
     return RedfishConnection(
         url,
         user,
@@ -204,7 +175,7 @@ class RedfishConnection(object):
         """Initialize a connection to a Redfish service."""
         super(RedfishConnection, self).__init__()
 
-        logger.info("Initialize python-redfish")
+        config.logger.info("Initialize python-redfish")
 
         self.connection_parameters = ConnectionParameters()
         self.connection_parameters.rooturl = url
@@ -212,29 +183,29 @@ class RedfishConnection(object):
         self.connection_parameters.password = password
         self.connection_parameters.enforceSSL = enforceSSL
         self.connection_parameters.verify_cert = verify_cert
-        
+
         # Use DMTF mockup or not
         self.__simulator = simulator
-    
+
         # Session attributes
         self.connection_parameters.auth_token = None
         self.connection_parameters.user_uri = None
-        
+
         rooturl = urlparse(self.connection_parameters.rooturl)
 
         # Enforce ssl
         if self.connection_parameters.enforceSSL is True:
-            logger.debug("Enforcing SSL")
+            config.logger.debug("Enforcing SSL")
             rooturl = rooturl._replace(scheme="https")
             self.connection_parameters.rooturl = rooturl.geturl()
 
         # Verify cert
         if self.connection_parameters.verify_cert is False:
-            logger.info("Certificat is not checked, " +
+            config.logger.info("Certificat is not checked, " +
                         "this is insecure and can allow" +
                         " a man in the middle attack")
 
-        logger.debug("Root url : %s", self.connection_parameters.rooturl)
+        config.logger.debug("Root url : %s", self.connection_parameters.rooturl)
         self.Root = types.Root(self.connection_parameters.rooturl,
                          self.connection_parameters
                         )
@@ -242,33 +213,36 @@ class RedfishConnection(object):
         #                             debug=TORTILLADEBUG)
         #self.root = self.api_url.get(verify=self.connection_parameters.verify_cert)
 
-        logger.debug("API Version : %s", self.get_api_version())
-        
-        # Instanciate a mapping object to handle Redfish version variation
-        self.redfish_mapper = mapping.RedfishVersionMapping(self.get_api_version()) 
-        
+        config.logger.debug("API Version : %s", self.get_api_version())
+
+        # Instanciate a global mapping object to handle Redfish version variation
+        mapping.redfish_mapper = mapping.RedfishVersionMapping(self.get_api_version())
+
         # Now we need to login otherwise we are not allowed to extract data
         if self.__simulator is False:
             try:
-                logger.info("Login to %s", rooturl.netloc)
+                config.logger.info("Login to %s", rooturl.netloc)
                 self.login()
-                logger.info("Login successful")
+                config.logger.info("Login successful")
             except "Error getting token":
-                logger.error("Login fail, error getting token")
+                config.logger.error("Login fail, error getting token")
                 sys.exit(1)
 
 
         # Types
         self.SessionService = types.SessionService(
                                         self.Root.get_link_url(
-                                            self.redfish_mapper.map_sessionservice(),
-                                            self.redfish_mapper),
+                                            mapping.redfish_mapper.map_sessionservice()),
                                         self.connection_parameters
                                                    )
+
+        self.Managers = types.ManagersCollection(self.Root.get_link_url("Managers"),
+                                                 self.connection_parameters
+                                                 )
         
-        
-        
-        #self.Managers = types.ManagersCollection(self.url + "/Managers", self.verify_cert, self.user_uri)
+        self.Systems = types.SystemsCollection(self.Root.get_link_url("Systems"),
+                                                 self.connection_parameters
+                                                 )
 #         self.Chassis
 #         self.Systems
 #         self.EventService
@@ -284,7 +258,7 @@ class RedfishConnection(object):
     #
     #     print self.systemCollection.Name
     #
-    # ========================================================================    
+    # ======================================================================== 
     def get_api_version(self):
         """Return api version.
 
@@ -297,8 +271,7 @@ class RedfishConnection(object):
     def login(self):
         # Craft full url
         url = self.Root.get_link_url(
-                                    self.redfish_mapper.map_sessionservice(),
-                                    self.redfish_mapper
+                                    mapping.redfish_mapper.map_sessionservice()
                                     )
 
         # Craft request body and header
@@ -326,8 +299,8 @@ class RedfishConnection(object):
 
         self.connection_parameters.auth_token = auth.headers.get("x-auth-token")
         self.connection_parameters.user_uri = auth.headers.get("location")
-        logger.debug("x-auth-token : %s", self.connection_parameters.auth_token)
-        logger.debug("user session : %s", self.connection_parameters.user_uri)
+        config.logger.debug("x-auth-token : %s", self.connection_parameters.auth_token)
+        config.logger.debug("user session : %s", self.connection_parameters.user_uri)
         return True
 
     def logout(self):
@@ -344,72 +317,70 @@ class RedfishConnection(object):
                                 )
 
         if logout.status_code == 200:
-            logger.info("Logout successful")
+            config.logger.info("Logout successful")
         else:
-            logger.error("Logout failed")
+            config.logger.error("Logout failed")
             sys.exit(1)
 
-               
+
 class ConnectionParameters(object):
     """Store connection parameters."""
 
     def __init__(self):
         pass
-          
+
     @property
     def rooturl(self):
         return self.__rooturl
-        
+
     @rooturl.setter
     def rooturl(self, rooturl):
         self.__rooturl = rooturl
-        
+
     @property
     def user_name(self):
         return self.__user_name
-        
+
     @user_name.setter
     def user_name(self, user_name):
         self.__user_name = user_name
-      
+
     @property
     def password(self):
         return self.__password
-        
+
     @password.setter
     def password(self, password):
         self.__password = password
-        
+
     @property
     def enforceSSL(self):
         return self.__enforceSSL
-        
+
     @enforceSSL.setter
     def enforceSSL(self, enforceSSL):
         self.__enforceSSL = enforceSSL
-        
+
     @property
     def verify_cert(self):
         return self.__verify_cert
-        
+
     @verify_cert.setter
     def verify_cert(self, verify_cert):
         self.__verify_cert = verify_cert
-    
+
     @property
     def auth_token(self):
         return self.__auth_token
-        
+
     @auth_token.setter
     def auth_token(self, auth_token):
         self.__auth_token = auth_token
-    
+
     @property
     def user_uri(self):
         return self.__user_uri
-        
+
     @user_uri.setter
     def user_uri(self, user_uri):
         self.__user_uri = user_uri
-
- 
