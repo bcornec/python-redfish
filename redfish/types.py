@@ -1,7 +1,9 @@
 # coding=utf-8
 
+import sys
 import pprint
 from urlparse import urljoin
+import requests
 import tortilla
 import config
 import mapping
@@ -18,12 +20,18 @@ class Base(object):
         self.url = url
         self.api_url = tortilla.wrap(url, debug=config.TORTILLADEBUG)
 
-        if connection_parameters.auth_token == None:
-            self.data = self.api_url.get(verify=connection_parameters.verify_cert)
-        else:
-            self.data = self.api_url.get(verify=connection_parameters.verify_cert,
-                                         headers={'x-auth-token': connection_parameters.auth_token}
-                                        )
+        try:
+            if connection_parameters.auth_token == None:
+                self.data = self.api_url.get(verify=connection_parameters.verify_cert)
+            else:
+                self.data = self.api_url.get(verify=connection_parameters.verify_cert,
+                                             headers={'x-auth-token': connection_parameters.auth_token}
+                                             )
+        except requests.ConnectionError as e:
+            print e
+            # Log and transmit the exception.
+            config.logger.error("Connection error : %s", e)
+            raise e
         print self.data
 
     def get_link_url(self, link_type):

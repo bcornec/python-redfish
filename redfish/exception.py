@@ -9,5 +9,8 @@ class RedfishException(Exception):
 
 
 
-class AuthenticationException(RedfishException):
+class AuthenticationFailureException(RedfishException):
+    pass
+
+class LogoutFailureException(RedfishException):
     pass
