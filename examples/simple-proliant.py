@@ -21,6 +21,6 @@ print ("Redfish API version : %s \n" % remote_mgmt.get_api_version())
 #        --> will be something like :
 #        remote_mgmt.Systems.systems_list[0] = remote_mgmt.Systems.managed_system
 
-print "Bios version : {}\n".format(remote_mgmt.Systems.systems_list[0].get_bios_version())
+print("Bios version : {}\n".format(remote_mgmt.Systems.systems_list[0].get_bios_version()))
 
 remote_mgmt.logout()
