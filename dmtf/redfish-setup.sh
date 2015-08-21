@@ -16,7 +16,7 @@ trap stop_apache HUP INT QUIT KILL TERM
 
 # Main
 cd /var/www/html
-unzip -q -o /tmp/DSP2043_0.96.0a.zip
+unzip -q -o /tmp/DSP2043_0.99.0a.zip
 mkdir -p redfish
 cd redfish
 ln -sf .. v1
