@@ -123,6 +123,7 @@ import requests
 import config
 import types
 import mapping
+import exception
 
 # Global variable definition
 redfish_logfile = "/var/log/python-redfish/python-redfish.log"
@@ -225,8 +226,8 @@ class RedfishConnection(object):
                 self.login()
                 config.logger.info("Login successful")
             except "Error getting token":
-                config.logger.error("Login fail, error getting token")
-                sys.exit(1)
+                config.logger.error("Login fail, fail to get auth token")
+                raise exception.AuthenticationFailureException("Fail to get an auth token.")
 
 
         # Types
@@ -285,17 +286,18 @@ class RedfishConnection(object):
         # =======================================================================
         # sessionsUrl = tortilla.wrap("https://10.3.222.104/rest/v1/Sessions", debug=TORTILLADEBUG)
         # sessions = sessionsUrl.post(verify=self.verify_cert, data=requestBody)
-
         auth = requests.post(url,
                              data=json.dumps(requestBody),
                              headers=header,
                              verify=self.connection_parameters.verify_cert
                             )
+        
         # =======================================================================
         # TODO : Manage exception with a class.
         # =======================================================================
-        #if auth.status_code != 201:
-            #raise "Error getting token", auth.status_code
+        if auth.status_code != 201:
+            pass
+            #sysraise "Error getting token", auth.status_code
 
         self.connection_parameters.auth_token = auth.headers.get("x-auth-token")
         self.connection_parameters.user_uri = auth.headers.get("location")
@@ -320,7 +322,7 @@ class RedfishConnection(object):
             config.logger.info("Logout successful")
         else:
             config.logger.error("Logout failed")
-            sys.exit(1)
+            raise exception.LogoutFailureException("Fail to logout properly.")
 
 
 class ConnectionParameters(object):

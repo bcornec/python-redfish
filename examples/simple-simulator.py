@@ -17,6 +17,6 @@ remote_mgmt = redfish.connect(URL, USER_NAME, PASSWORD,
 
 print ("Redfish API version : {} \n".format(remote_mgmt.get_api_version()))
 print ("UUID : {} \n".format(remote_mgmt.Root.get_api_UUID()))
-print "Bios version : {}\n".format(remote_mgmt.Systems.systems_list[0].get_bios_version())
+print ("Bios version : {}\n".format(remote_mgmt.Systems.systems_list[0].get_bios_version()))
 
 #print remoteMgmt.get_api_link_to_server()

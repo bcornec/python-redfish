@@ -2,6 +2,7 @@
 
 import pprint
 from urlparse import urljoin
+import requests
 import tortilla
 import config
 import mapping
@@ -18,12 +19,18 @@ class Base(object):
         self.url = url
         self.api_url = tortilla.wrap(url, debug=config.TORTILLADEBUG)
 
-        if connection_parameters.auth_token == None:
-            self.data = self.api_url.get(verify=connection_parameters.verify_cert)
-        else:
-            self.data = self.api_url.get(verify=connection_parameters.verify_cert,
-                                         headers={'x-auth-token': connection_parameters.auth_token}
-                                        )
+        try:
+            if connection_parameters.auth_token == None:
+                self.data = self.api_url.get(verify=connection_parameters.verify_cert)
+            else:
+                self.data = self.api_url.get(verify=connection_parameters.verify_cert,
+                                             headers={'x-auth-token': connection_parameters.auth_token}
+                                             )
+        except requests.ConnectionError as e:
+            print e
+            # Log and transmit the exception.
+            config.logger.error("Connection error : %s", e)
+            raise e
         print self.data
 
     def get_link_url(self, link_type):
@@ -100,7 +107,23 @@ class SessionService(Base):
 
 
 class Managers(Base):
-    pass
+    def __init__(self, url, connection_parameters):
+        super(Managers, self).__init__(url, connection_parameters)
+        
+        try:
+            
+#             self.ethernet_interfaces_collection = EthernetInterfacesCollection(
+#                                                         self.get_link_url("EthernetInterfaces"),
+#                                                         connection_parameters
+#                                                         )
+
+            # Works on proliant, need to treat 095 vs 0.96 differences
+            self.ethernet_interfaces_collection = EthernetInterfacesCollection(
+                                                        self.get_link_url("EthernetNICs"),
+                                                        connection_parameters
+                                                        )
+        except:
+            pass
 
 
 class ManagersCollection(BaseCollection):
@@ -151,3 +174,20 @@ class SystemsCollection(BaseCollection):
         
         for link in self.links:
             self.systems_list.append(Systems(link, connection_parameters))
+            
+            
+class EthernetInterfacesCollection(BaseCollection):
+    def __init__(self, url, connection_parameters):
+        super(EthernetInterfacesCollection, self).__init__(url, connection_parameters)
+        
+        self.ethernet_interfaces_list = []
+        
+        # Url returned by the mock up is wrong /redfish/v1/Managers/EthernetInterfaces/1 returns a 404.
+        # The correct one should be /redfish/v1/Managers/1/EthernetInterfaces/1
+        # Check more than 1 hour for this bug.... grrr....
+        for link in self.links:
+            self.ethernet_interfaces_list.append(EthernetInterfaces(link, connection_parameters))
+
+
+class EthernetInterfaces(Base):
+    pass
