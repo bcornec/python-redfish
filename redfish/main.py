@@ -244,8 +244,11 @@ class RedfishConnection(object):
         self.Systems = types.SystemsCollection(self.Root.get_link_url("Systems"),
                                                  self.connection_parameters
                                                  )
+        
+        for system in self.Systems.systems_list:
+            config.logger.debug(system.data.links.ManagedBy)
 #         self.Chassis
-#         self.Systems
+
 #         self.EventService
 #         self.AccountService
 #         self.Tasks
