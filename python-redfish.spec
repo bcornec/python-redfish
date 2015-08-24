@@ -28,6 +28,7 @@ system such as defined by http://www.redfishcertification.org
 %install
 %{__python} setup.py install -O1 --skip-build --root %{buildroot}
 
+# TODO: Add examples
 %files
 %dir %{python_sitelib}/redfish
 %{python_sitelib}/redfish/*
