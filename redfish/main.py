@@ -230,6 +230,13 @@ class RedfishConnection(object):
                 raise exception.AuthenticationFailureException("Fail to get an auth token.")
 
 
+
+        # Struture change with mockup 1.0.0, there is no links
+        # section anymore.
+        # ===================================================================
+        # TODO : Add a switch to allow the both structure
+        # ===================================================================
+
         # Types
         self.SessionService = types.SessionService(
                                         self.Root.get_link_url(
@@ -240,11 +247,11 @@ class RedfishConnection(object):
         self.Managers = types.ManagersCollection(self.Root.get_link_url("Managers"),
                                                  self.connection_parameters
                                                  )
-        
+
         self.Systems = types.SystemsCollection(self.Root.get_link_url("Systems"),
                                                  self.connection_parameters
                                                  )
-        
+
         for system in self.Systems.systems_list:
             config.logger.debug(system.data.links.ManagedBy)
 #         self.Chassis
@@ -294,7 +301,7 @@ class RedfishConnection(object):
                              headers=header,
                              verify=self.connection_parameters.verify_cert
                             )
-        
+ 
         # =======================================================================
         # TODO : Manage exception with a class.
         # =======================================================================
