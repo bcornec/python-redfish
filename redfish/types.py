@@ -141,6 +141,11 @@ class ManagersCollection(BaseCollection):
 class Systems(Base):
     # TODO : Need to discuss with Bruno the required method.
     #        Also to check with the ironic driver requirement.
+    def __init__(self, url, connection_parameters):
+        super(Systems, self).__init__(url, connection_parameters)
+        
+        self.managed_system = None
+
     def reset_system(self):
         # Craft the request
         action = dict()
@@ -160,7 +165,7 @@ class Systems(Base):
             # Returned by proliant
             return self.data.Bios.Current.VersionString
         except:
-            # Retuned by mockup.
+            # Returned by mockup.
             # Hopefully this kind of discrepencies will be fixed with Redfish 1.0 (August)
             return self.data.BiosVersion
 

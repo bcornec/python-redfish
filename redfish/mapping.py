@@ -13,21 +13,27 @@ class RedfishVersionMapping(object):
             return "Sessions"
         if self.__version == "0.96.0":
             return "SessionService"
+        return("SessionService")
+        
 
     def map_links(self):
         if self.__version == "0.9.5":
             return "links"
         if self.__version == "0.96.0":
             return "Links"
+        return("Links")
+        
 
     def map_links_ref(self):
         if self.__version == "0.9.5":
             return "href"
         if self.__version == "0.96.0":
             return "@odata.id"
-
+        return("@odata.id")
+    
     def map_members(self):
         if self.__version == "0.9.5":
             return "Member"
         if self.__version == "0.96.0":
             return "Members"
+        return("Members")
