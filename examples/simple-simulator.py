@@ -4,7 +4,7 @@
 
 import redfish
 
-URL = 'http://127.0.0.1:8000/redfish/v1'
+URL = 'http://127.0.0.1:8001/redfish/v1'
 USER_NAME = 'Admin'
 PASSWORD = 'password'
 

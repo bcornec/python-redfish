@@ -214,7 +214,8 @@ class RedfishConnection(object):
         #                             debug=TORTILLADEBUG)
         #self.root = self.api_url.get(verify=self.connection_parameters.verify_cert)
 
-        config.logger.debug("API Version : %s", self.get_api_version())
+        config.logger.info("API Version : %s", self.get_api_version())
+        mapping.redfish_version = self.get_api_version()
 
         # Instanciate a global mapping object to handle Redfish version variation
         mapping.redfish_mapper = mapping.RedfishVersionMapping(self.get_api_version())
