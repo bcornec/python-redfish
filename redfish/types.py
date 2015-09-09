@@ -163,8 +163,6 @@ class Systems(Base):
     def __init__(self, url, connection_parameters):
         super(Systems, self).__init__(url, connection_parameters)
         
-        self.managed_system = None
-
     def reset_system(self):
         # Craft the request
         action = dict()
