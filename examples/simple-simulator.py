@@ -2,14 +2,30 @@
 
 """ Simple example to use python-redfish with DMTF simulator """
 
+import os
+import sys
+import json
 import redfish
 
-URL = 'http://127.0.0.1:8001/redfish/v1'
-USER_NAME = 'Admin'
-PASSWORD = 'password'
+# Get $HOME environment.
+HOME = os.getenv('HOME')
 
-''' Define a new log file '''
-redfish.set_log_file("/var/log/python-redfish/python-redfish-simulator.log")
+if HOME == '':
+    print("$HOME environment variable not set, please check your system")
+    sys.exit(1)
+
+try:
+    with open(HOME + "/.redfish.conf") as json_data:
+        config = json.load(json_data)
+        json_data.close()
+except IOError as e:
+    print("Please create a json configuration file")
+    print(e)
+    sys.exit(1)
+
+URL = config["Nodes"]["default"]["url"]
+USER_NAME = config["Nodes"]["default"]["login"]
+PASSWORD = config["Nodes"]["default"]["password"]
 
 ''' remoteMgmt is a redfish.RedfishConnection object '''
 remote_mgmt = redfish.connect(URL, USER_NAME, PASSWORD,
