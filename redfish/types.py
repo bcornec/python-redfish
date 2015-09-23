@@ -34,11 +34,24 @@ class Base(object):
         print self.data
 
     def get_link_url(self, link_type):
+        """Need to be explained.
+
+        :param redfish_logfile: redfish log
+        :type str
+        :returns:  True
+
+        """
         self.links=[]
-        #links = self.data.links
-        links = getattr(self.data, mapping.redfish_mapper.map_links())
-        if link_type in links:
-            return  urljoin(self.url, links[link_type][mapping.redfish_mapper.map_links_ref()])
+        
+        # Manage standard < 1.0
+        if float(mapping.redfish_version) < 1.00:
+            links = getattr(self.data, mapping.redfish_mapper.map_links())
+            if link_type in links:
+                return  urljoin(self.url, links[link_type][mapping.redfish_mapper.map_links_ref()])
+        else:
+            links = getattr(self.data, link_type)
+            link = getattr(links, mapping.redfish_mapper.map_links_ref())
+            return  urljoin(self.url, link)
         
     @property
     def url(self):
@@ -60,8 +73,11 @@ class BaseCollection(Base):
 
         #linksmembers = self.data.Links.Members
         #linksmembers = self.data.links.Member
-        linksmembers = getattr(self.data, mapping.redfish_mapper.map_links())
-        linksmembers = getattr(linksmembers, mapping.redfish_mapper.map_members())
+        if float(mapping.redfish_version) < 1.00:
+            linksmembers = getattr(self.data, mapping.redfish_mapper.map_links())
+            linksmembers = getattr(linksmembers, mapping.redfish_mapper.map_members())
+        else:
+            linksmembers = getattr(self.data, mapping.redfish_mapper.map_members())
         for link in linksmembers:
             #self.links.append(getattr(link,"@odata.id"))
             #self.links.append(getattr(link,"href"))
@@ -86,6 +102,9 @@ class Root(Base):
             version = self.data.RedfishVersion
         except AttributeError:
             version = self.data.ServiceVersion
+        
+        version = version.replace('.', '')
+        version = version[0] + '.' + version[1:]
         return(version)
 
     def get_api_UUID(self):
@@ -144,8 +163,6 @@ class Systems(Base):
     def __init__(self, url, connection_parameters):
         super(Systems, self).__init__(url, connection_parameters)
         
-        self.managed_system = None
-
     def reset_system(self):
         # Craft the request
         action = dict()
