@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Redfish & Python Redfish</title>
+
+		<meta name="description" content="Redfish & Python Redfish">
+		<meta name="author" content="René Ribaud" >
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="revealjs/css/reveal.css">
+		<link rel="stylesheet" href="revealjs/css/theme/white.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="revealjs/lib/css/zenburn.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'revealjs/css/print/pdf.css' : 'revealjs/css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+		
+		<style type="text/css">
+			@font-face {
+   	   font-family: hpsimplified;
+         src: url("fonts/hps-me-w27-bold-ttf.ttf");
+			}
+			<!-- .reveal { font-family: "Helvetica Neue",Helvetica,"Segoe UI",Arial,freesans,sans-serif; } -->
+			.reveal { font-family: hpsimplified;	}
+			.iwantitatleft { text-align: left; }
+			.reveal ul { font-size: 0.9em; text-align: left; }
+			.lots_of_items ul { font-size: 0.7em; text-align: left; }
+			.lots_of_items h3 { font-size: 0.7em; }
+			.lots_of_items h4 { font-size: 0.6em; }
+			.lots_of_items code { font-size: 0.7em; }
+			.reveal pre code { max-height: 540px; }
+			.left_pic { position: relative; float: left; width:50%; top: 30px; }
+			.left_text { position: relative; float: left; width:50%; }
+			.right_text { width:50%; text-align: left; float: right; }
+			.reveal h3 { color: #0096D6; text-transform: none;}
+			.reveal h2 { text-transform: none;}
+			.reveal a { color: #007DBA; }
+			.reveal h2 b { color: #0096D6; }
+			.reveal h2 .day { font-size: 0.6em; position:relative; bottom: 20px; }
+			.reveal pre { width: 100%; }
+		</style>
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<!-- <section data-background="images/hp_background.png"> -->
+				<section data-background="images/background.jpg">
+					<h1>Redfish & Python Redfish</h1>
+					<h3>A standard way to manage servers</h3>
+				</section>
+				
+				<section>
+					<h2>Session Agenda</h2>
+					<div class="iwantitatleft">
+					<ul>
+					<li>Light out management</li>
+					<li>Intelligent Platform Management Interface</li>
+					<li>The need for automation / scalability</li>
+					<li>Redfish</li>
+					<li>Python Redfish</li>
+					</ul>
+					</div>
+				</section>
+
+				<section>
+					<h2>What is Lights-out management ?</h2>
+					<img src="images/what.png" alt="what is ansible" width="30%">
+				</section>
+
+				<section>
+					<h2>Lights-out management</h2>
+					<h3>Remote device</h3>
+					<ul>
+					<span class="fragment"><li>Monitoring</li></span> <span class="fragment"><li>Management</li></span></p>
+					</ul>
+				</section>
+
+				<section>
+					<h2>Lights-out management</h2>
+					<h3>Regardless device power</h3>
+					<img src="images/poweroff.jpg" alt="poweroff" width="40%">
+				</section>
+
+				<section>
+					<h2>Lights-out management</h2>
+					<h3>Regardless operating system availability</h3>
+					<img src="images/no_os.jpg" alt="no_os" width="40%">
+				</section>
+
+				<section>
+					<h2>Lights-out management</h2>
+					<h3>How is this done ?</h3>
+					<img src="images/remote_mgmt_card.jpg" alt="redfish_logo" width="40%">
+				</section>
+				
+				<section>
+					<h2>Lights-out management</h2>
+					<h3>Main management possibilities</h3>
+					<img src="images/remote_mgmt_actions.jpg" alt="remote management actions" width="25%">
+				</section>
+				
+				<section>
+					<h2>Lights-out management</h2>
+					<h3>Example temperature monitoring</h3>
+					<img src="images/remote_mgmt_monitoring_temp.jpg" alt="monitoring temperature" width="100%">
+				</section>				
+				
+				<section>
+					<h2>Lights-out management</h2>
+					<h3>Proprietary solutions</h3>
+					<div class="left_pic">
+					<img src="images/proprietary.jpeg" alt="redfish_logo" width="80%">
+					</div>
+					<div class="right_text">					
+					<ul>
+					<li>AMI MegaRAC</li></span>
+					<li>Cisco CIMC</li></span>
+					<li>Dell DRAC</li></span>
+					<li>HP ilo</li></span>					
+					<li>IBM Remote Supervisor Adapter</li></span>					
+					<li>Oracle ILOM</li></span>
+					</ul>
+					</div>
+				</section>				
+				
+				<section>
+					<h2><b>I</b>ntelligent <b>P</b>latform <b>M</b>anagement <b>I</b>nterface</h2>
+					<h3>A step to unify light out management</h3>
+					<ul>
+					<li>Currently the only way to manage heterogeneous hardware</li>
+					<li>Available from client tools thanks to <a href="http://ipmiutil.sourceforge.net/">IPMIutil</a> tool</li>
+					</ul>
+				</section>
+
+				<section>
+					<h2><b>I</b>ntelligent <b>P</b>latform <b>M</b>anagement <b>I</b>nterface</h2>
+					<h3>But with some constraints</h3>
+					<ul>
+					<li>Low level specifications</li>	
+					<li>Hard to use for end users</li>
+					<li>Not all light out features supported and hard to extend</li>
+					<li>Security concerns</li>
+					<li>Complex to manage on high integrated servers</li>					
+					</ul>
+				</section>
+
+
+				<section>
+					<h2>The need for automation / scalability</h2>
+					<img src="images/gears.jpeg" alt="gears" width="50%" width="100%">				
+				</section>
+
+				<section>
+					<h2>The need for automation / scalability</h2>
+					<ul>
+					<li>Scale out servers architecture with commodity servers</li>
+					<li>Repetitive configuration</li>					
+					<li>End user friendly</li>
+					<li>Available from anywhere, with any platform</li>
+					<li>Security</li>
+					<li><b>S</b>oftware <b>D</b>efined <b>I</b>nfrastructure market trend</li>
+					</ul>
+				</section>
+
+				
+				<section>
+					<h2>Here comes Redfish !</h2>
+					<img src="images/dmtf-redfish-logo.png" alt="redfish logo">				
+				</section>
+
+				<section>
+					<h2>What is Redfish</h2>
+					<h3>A powerful and user friendly IPMI alternative</h3>
+					<ul>
+					<li><b>Standard</b> proposed by the <b>D</b>istributed <b>M</b>anagement <b>T</b>ask <b>F</b>orce</li>
+					<li>Initially promoted by Dell, Emerson, HP and Intel</li>		
+					</ul>
+				</section>
+
+
+				<section>
+					<h2>Redfish v1.0 (3<span class="day">rd</span> Aug 2015)</h2>
+					<h3>Content</h3>
+					<ul>
+					<li>Light out management using a Rest API specification</li>
+					<li>JSON / Odata based schemas to describe resources</li>
+					<li>A mockup</li>
+					<li>Documentation, white papers, FAQ</li>					
+					<li>Available online at <a href="https://www.dmtf.org/standards/redfish">https://www.dmtf.org/standards/redfish</a></li>
+					</ul>
+				</section>
+
+
+				<section>
+					<h2>Redfish real life examples</h2>
+					<ul>
+					<li>Using simple http get</li>
+					<ul>					
+					<li>Grab Bios version</li>
+					<li>Get server model and cpu models</li>
+					</ul>
+					<li>Using simple http post</li>
+					<ul>					
+					<li>Set a bios parameter using a simple http post</li>
+					<li>Reset server</li>
+					<li>Change next boot to the network</li>
+					</ul>					
+					</ul>
+					<h3>all of this, whatever the platform</h3>
+				</section>
+
+
+				<section>
+					<h2>HP Redfish 1.0 hardware support</h2>
+					<h3>This is available now !</h3>
+					<ul>
+					<li>Ilo v4</li>
+					<li>Firmware 2.30</li>
+					</ul>
+				</section>
+
+
+				<section>
+					<h2>Python Redfish</h2>
+					<img src="images/python-logo-generic.svg" alt="python logo" />
+					<h3>A python library to manage Redfish</h3>
+					<ul>
+					<li>Open source project</li>
+					<li>Initiated by a small group of people (Bruno, Devenanda, René, Sammer, Vincent)</li>
+					<li>Available at <a href="https://github.com/uggla/python-redfish" >https://github.com/uggla/python-redfish</a></li>
+					</ul>
+				</section>
+				
+				
+				<section>
+					<h2>Python Redfish</h2>
+					<h3>Initial goals</h3>
+					<ul>
+					<li>Provide a library to easily add Redfish support into applications</li>
+					<li>Provide a Redfish client tool based on the library</li>
+					</ul>
+				</section>
+				
+				
+				<section>
+					<h2>Python Redfish</h2>
+					<h3>Ultimate goals</h3>
+					<ul>
+					<li>Integration into Openstack Ironic</li>
+					<li>Integration into CMDB tools (cf <a href="https://github.com/uggla/alexandria" >Alexandria</a> project)</li>
+					<li>World domination ! :)</li>					
+					</ul>
+					<br/>
+					<img src="images/day-of-the-tentacle.png" alt="world domination" width="25%"/>
+				</section>
+
+				
+				<section>
+					<h2>Python Redfish</h2>
+					<img src="images/under-construction.png" alt="under construction" width="30%"/>
+					<h3>Status</h3>
+					<ul>
+					<li>Project in infancy</li>
+					<li>Core library development ready</li>
+					</ul>
+				</section>
+
+
+				<section>
+					<h2>Python Redfish</h2>
+					<h3>Status</h3>
+					<ul>
+					<li>First power management features implemented</li>
+					<li>Bios management features implemented</li>
+					<li>Code samples</li>
+					<li>Client development in progress</li>
+				</section>
+
+
+				<section>
+					<h2>Python Redfish</h2>
+					<h3>Status</h3>
+					<ul>
+					<li>Docker file producing a ready to use container with Redfish mockup.</li>
+					<li>python-redfish dependencies rpm available into Mageia and Fedora</li>
+					<li>This presentation</li>
+					</ul>
+					<h3>Contributors welcomed</h3>
+				</section>
+
+
+				<section>
+					<h2>Python Redfish</h2>
+					<h3>Tested on</h3>
+					<ul>
+					<li>Redfish 1.0 mockup / proliant</li>
+					<li>Redfish 0.9.5 mockup / proliant / moonshot</li>
+					</ul>
+				</section>
+
+				
+				<section>
+					<h2>Python Redfish</h2>
+					<h3>External dependencies</h3>
+					<img src="images/requests.png" alt="requests" height="200px"/>					
+					<img src="images/tortilla.jpg" alt="tortilla" height="200px"/>
+					<br/>
+					<ul>
+					<li><a href="http://docs.python-requests.org/en/latest/">Requests</a></li>
+					<li><a href="https://pypi.python.org/pypi/tortilla">tortilla</a> (thx Damien)</li>
+					</ul>
+				</section>
+
+
+				<section>
+					<h2>Python Redfish</h2>
+					<h3>Library usage example</h3>
+					<ul>
+					<li>Import<pre><code>import redfish</code></pre></li>
+					<li>Create a redfish object<pre><code>remote_mgmt = redfish.connect(URL, USER_NAME, PASSWORD, verify_cert=False)</code></pre></li>
+					<li>Retrieve API version<pre><code>remote_mgmt.get_api_version()</code></pre></li>
+					<li>Retrieve power status<pre><code>remote_mgmt.Systems.systems_list[0].get_power()</code></pre></li>
+					</ul>
+				</section>
+
+
+				<section>
+					<h2>Python Redfish</h2>
+					<h3>Library usage example</h3>
+					<ul>
+					<li>Get bios parameter<pre><code>remote_mgmt.Systems.systems_list[0].bios.get_parameter("AdminPhone")</code></pre></li>
+					<li>Set bios parameter<pre><code>remote_mgmt.Systems.systems_list[0].bios.set_parameter("AdminPhone","xxx")</code></pre></li>
+					<li>Reboot system<pre><code>remote_mgmt.Systems.systems_list[0].reset_system()</code></pre></li>
+					</ul>
+				</section>
+
+
+				<section>
+				<h1>Thank you</h1>
+				<ul>				
+				<li>René Ribaud &lt;rene.ribaud@hp.com&gt;</li>
+				</ul>
+				</section>
+
+			</div>
+
+		</div>
+
+		<script src="revealjs/lib/js/head.min.js"></script>
+		<script src="revealjs/js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+				width: 1024,    
+
+
+
+				transition: 'convex', // none/fade/slide/convex/concave/zoom
+				
+				
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'revealjs/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'revealjs/plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'revealjs/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'revealjs/plugin/highlight/highlight.js', async: true, condition: function() { return !!document.querySelector( 'pre code' ); }, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'revealjs/plugin/zoom-js/zoom.js', async: true },
+					{ src: 'revealjs/plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
