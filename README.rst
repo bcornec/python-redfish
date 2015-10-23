@@ -26,6 +26,7 @@ for build and test automation::
     dmtf            # Reference documents and mockup provided by the DMTF
     examples/       # any sample code using this library, eg. for education
                     # should be put here
+    presentation/   # redfish / python-redfish presentation
     redfish/        # the redfish library
     redfish/tests/  # python unit test suite
 

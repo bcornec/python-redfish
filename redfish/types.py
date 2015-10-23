@@ -168,7 +168,10 @@ class Systems(Base):
     def __init__(self, url, connection_parameters):
         """Class constructor"""
         super(Systems, self).__init__(url, connection_parameters)
-        self.bios = Bios(url+"Bios/Settings", connection_parameters)
+        try:
+            self.bios = Bios(url + "Bios/Settings", connection_parameters)
+        except:
+            pass
         
     def reset_system(self):
         """Force reset of the system.
