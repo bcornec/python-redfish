@@ -3,15 +3,15 @@ python-redfish
 
 This repository will be used to house the Redfish python library, a reference
 implementation to enable Python developers to communicate with the Redfish API
-(http://www.redfishspecification.org/).
+(http://www.dmtf.org/standards/redfish).
 
 NOTE::
 
     DRAFT - WORK IN PROGRESS
 
-    The current Redfish specification revsion is 0.91 - anything and everything
-    in this library is subject to change until the DMTF ratifies the Redfish API
-    standard v1.0.
+    The current Redfish specification revision is 1.0.0 - Note that the mockup 
+    is still at version 0.99.0a and may not reflect what the standard provides 
+    fully
 
 
 Project Structure
@@ -23,6 +23,7 @@ for build and test automation::
     doc/            # documentation
     doc/source      # the doc source files live here
     doc/build/html  # output of building any docs will go here
+    dmtf            # Reference documents and mockup provided by the DMTF
     examples/       # any sample code using this library, eg. for education
                     # should be put here
     redfish/        # the redfish library
@@ -33,9 +34,9 @@ Requirements
 
 To use the enclosed examples, you will need Python 2.7
 (https://www.python.org/downloads/).  Note that Python 2.7.9 enforces greater
-SSL verification requiring server certificates be installed.  Parameters to
+SSL verification requiring server certificates be installed. Parameters to
 relax the requirements are available in the library, but these configurations
-are discouraged due to sec
+are discouraged due to security.
 
 Python requirements are listed in requirements.txt; additional requirements for
 running the unit test suite are listed in test-requirements.txt.
