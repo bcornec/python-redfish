@@ -44,6 +44,7 @@ import jinja2
 import requests.packages.urllib3
 import redfish
 
+
 class InventoryFile(object):
     '''redfisht-client inventory file management'''
     def __init__(self, inventory_file):
@@ -143,7 +144,8 @@ class InventoryFile(object):
                 self.manager_incorect(e)
         elif parameter == 'password':
             try:
-                self.data['Managers'][manager_name]['password'] = parameter_value
+                self.data['Managers'][manager_name]['password'] \
+                    = parameter_value
             except KeyError as e:
                 self.manager_incorect(e)
         elif parameter == 'manager_name':
@@ -226,7 +228,6 @@ if __name__ == '__main__':
             return(os.getenv('VIRTUAL_ENV'))
         return(False)
 
-
     def show_manager(all=False):
         '''Display manager info
 
@@ -272,18 +273,21 @@ if __name__ == '__main__':
             sys.stderr.write(str(e.advices))
             sys.exit(1)
 
-        # Display manager information using jinja2 template      
+        # Display manager information using jinja2 template
         try:
             template = jinja2_env.get_template("manager_info.template")
         except jinja2.exceptions.TemplateNotFound as e:
-            print('Template "{}" not found in {}.'.format(e.message, jinja2_env.loader.searchpath[0]))
-            logger.debug('Template "%s" not found in %s.' % (e.message, jinja2_env.loader.searchpath[0]))
+            print('Template "{}" not found in {}.'
+                  .format(e.message, jinja2_env.loader.searchpath[0]))
+            logger.debug('Template "%s" not found in %s.'
+                         % (e.message, jinja2_env.loader.searchpath[0]))
             sys.exit(1)
-        
+
         print template.render(r=remote_mgmt)
 
-
+    #################################################################
     # Main program
+    #################################################################
     redfishclient_version = "redfish-client PBVER"
 
     # Parse and manage arguments
@@ -356,7 +360,7 @@ if __name__ == '__main__':
     config = ConfigParser.ConfigParser(allow_no_value=True)
     logger.debug("Read configuration file")
     configfiles = ["/etc/redfish-client.conf",
-                  "/usr/local/etc/redfish-client.conf"]
+                   "/usr/local/etc/redfish-client.conf"]
 
     if(special_location()):
         configfiles = [special_location() + configfiles[0]]
