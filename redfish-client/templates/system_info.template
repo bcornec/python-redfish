@@ -19,13 +19,13 @@ CPU model : {{ system.get_cpumodel() }}
 
 {%- if system.processors_collection %}
 CPU details :
-	{%- for cpu_index in system.processors_collection.processors_dict | sort %}
-	{%- set cpu = system.processors_collection.processors_dict[cpu_index] %}
-	Processor id {{ cpu_index }} :
-	Speed : {{ cpu.get_speed() }}
-	Cores : {{ cpu.get_cores() }}
-	Threads : {{ cpu.get_threads() }}
-	{% endfor %}
+    {%- for cpu_index in system.processors_collection.processors_dict | sort %}
+    {%- set cpu = system.processors_collection.processors_dict[cpu_index] %}
+    Processor id {{ cpu_index }} :
+    Speed : {{ cpu.get_speed() }}
+    Cores : {{ cpu.get_cores() }}
+    Threads : {{ cpu.get_threads() }}
+    {% endfor %}
 {%- endif %}
 Available memory : {{ system.get_memory() }} GB
 Status : State : {{ system.get_status().Health }} / Health : {{ system.get_status().Health }}
@@ -51,14 +51,19 @@ Ethernet Interface :
 {%- endif %}
 Looking for potential OEM information :
 {%- if system.data.Oem.Hp %}
-	Supplemental information from OEM part.
-	{%- if system.network_adapters_collection %}
-	{%- for networkadapter_index in system.network_adapters_collection.network_adapters_dict | sort %}
-	{%- set na = system.network_adapters_collection.network_adapters_dict[networkadapter_index] %}
-		Network adapter id {{ networkadapter_index }} :
-		Mac address : {{ na.get_mac() | join(', ') }}
-	{%- endfor %}
-{%- endif %}
+    Supplemental information from OEM part.
+    {%- if system.network_adapters_collection %}
+    {%- for networkadapter_index in system.network_adapters_collection.network_adapters_dict | sort %}
+    {%- set na = system.network_adapters_collection.network_adapters_dict[networkadapter_index] %}
+    Network adapter id {{ networkadapter_index }} :
+        {{ na.get_name() }}
+        {#- Removing these information because the FW is not providing them correctly
+        {{ na.get_structured_name() }}
+        {{ na.get_uefi_path() }}
+        #}
+        Mac address : {{ na.get_mac() | join(', ') }}
+    {%- endfor %}
+    {%- endif %}
 {%- else %}
     This system has no supplemental OEM information
 {%- endif %}
@@ -71,9 +76,9 @@ Simple Storage :
     Simple Storage id {{ simplestorage_index }} :
     {{ ss.get_name() }}
     Status : State : {{ system.get_status().Health }} / Health : {{ system.get_status().Health }}
-	{%- for dev in ss.get_devices() %}
-	Device id {{ loop.index }} : {{ dev.Name }}  {{ dev.Manufacturer }}  {{ dev.Model }}
-	{%- endfor %}
+    {%- for dev in ss.get_devices() %}
+    Device id {{ loop.index }} : {{ dev.Name }}  {{ dev.Manufacturer }}  {{ dev.Model }}
+    {%- endfor %}
 {%- endfor %}
 {%- else %}
     This system has no simple storage

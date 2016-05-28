@@ -49,3 +49,26 @@ class NetworkAdapters(Base):
         except AttributeError:
             return "Not available"
 
+    def get_structured_name(self):
+        '''Get NetworkAdapters StructuredName
+
+        :returns: StructuredName or "Not available"
+        :rtype: string
+
+        '''
+        try:
+            return self.data.StructuredName
+        except AttributeError:
+            return "Not available"
+
+    def get_uefi_path(self):
+        '''Get networkadapters uefi path
+
+        :returns: UEFIDevicePath or "Not available"
+        :rtype: string
+
+        '''
+        try:
+            return self.data.UEFIDevicePath
+        except AttributeError:
+            return "Not available"
