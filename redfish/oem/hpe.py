@@ -27,7 +27,7 @@ class NetworkAdaptersCollection(BaseCollection):
                 link, connection_parameters)
 
 
-class NetworkAdapters(Base):
+class NetworkAdapters(Device):
     '''Class to manage redfish hpe oem NetworkAdapters data.'''
 
     def get_mac(self):
@@ -70,5 +70,88 @@ class NetworkAdapters(Base):
         '''
         try:
             return self.data.UEFIDevicePath
+        except AttributeError:
+            return "Not available"
+
+
+class SmartStorage(Base):
+    '''Class to manage redfish hpe oem SmartStorage data.'''
+    def __init__(self, url, connection_parameters):
+        super(SmartStorage, self).__init__(url, connection_parameters)
+        try:
+            self.array_controllers_collection = \
+                ArrayControllersCollection(
+                    self.get_link_url('ArrayControllers', self.data.Links),
+                    connection_parameters)
+
+        except AttributeError:
+            # This means we don't have ArrayControllers
+            self.array_controllers_collection = None
+
+
+class ArrayControllersCollection(BaseCollection):
+    '''Class to manage redfish hpe oem ArrayControllersCollection data.'''
+    def __init__(self, url, connection_parameters):
+        super(ArrayControllersCollection, self).__init__(url,
+                                                         connection_parameters)
+        self.array_controllers_dict = {}
+
+        for link in self.links:
+            index = re.search(r'ArrayControllers/(\w+)', link)
+            self.array_controllers_dict[index.group(1)] = ArrayControllers(
+                link, connection_parameters)
+
+
+class ArrayControllers(Device):
+    '''Class to manage redfish hpe oem ArrayControllers data.'''
+    def __init__(self, url, connection_parameters):
+        super(ArrayControllers, self).__init__(url, connection_parameters)
+        try:
+            self.logical_drives_collection = \
+                LogicalDrivesCollection(
+                    self.get_link_url('LogicalDrives', self.data.Links),
+                    connection_parameters)
+
+        except AttributeError:
+            # This means we don't have ArrayControllers
+            self.logical_drives_collection = None
+
+
+class LogicalDrivesCollection(BaseCollection):
+    '''Class to manage redfish hpe oem LogicalDrivesCollection data.'''
+    def __init__(self, url, connection_parameters):
+        super(LogicalDrivesCollection, self).__init__(url,
+                                                      connection_parameters)
+        self.logical_drives_dict = {}
+
+        for link in self.links:
+            index = re.search(r'LogicalDrives/(\w+)', link)
+            self.logical_drives_dict[index.group(1)] = LogicalDrives(
+                link, connection_parameters)
+
+
+class LogicalDrives(Device):
+    '''Class to manage redfish hpe oem LogicalDrives data.'''
+    def get_capacity(self):
+        '''Get Logical drive capacity
+
+        :returns: Logical drive capacity or "Not available"
+        :rtype: string
+
+        '''
+        try:
+            return self.data.CapacityMiB
+        except AttributeError:
+            return "Not available"
+
+    def get_raid(self):
+        '''Get Logical drive raid configuration
+
+        :returns: Logical drive raid configuration or "Not available"
+        :rtype: string
+
+        '''
+        try:
+            return self.data.Raid
         except AttributeError:
             return "Not available"

@@ -225,6 +225,15 @@ class Systems(Device):
             except AttributeError:
                 # This means we don't have NetworkAdapters
                 self.network_adapters_collection = None
+            try:
+                self.smart_storage = \
+                    hpe.SmartStorage(
+                        self.get_link_url('SmartStorage',
+                                          self.data.Oem.Hp.Links),
+                        connection_parameters)
+            except AttributeError:
+                # This means we don't have SmartStorage
+                self.smart_storage = None
         except AttributeError:
             # This means we don't have oem data
             pass

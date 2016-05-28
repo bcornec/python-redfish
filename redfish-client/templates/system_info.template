@@ -47,11 +47,11 @@ Ethernet Interface :
     Address ipv6 : {{ ei.get_ipv6() | join(', ') }}
 {%- endfor %}
 {%- else %}
-    This system has no ethernet interface
+    This system has no ethernet interface as Redfish standard data
 {%- endif %}
 Looking for potential OEM information :
 {%- if system.data.Oem.Hp %}
-    Supplemental information from OEM part.
+    Supplemental information from HPE OEM part.
     {%- if system.network_adapters_collection %}
     {%- for networkadapter_index in system.network_adapters_collection.network_adapters_dict | sort %}
     {%- set na = system.network_adapters_collection.network_adapters_dict[networkadapter_index] %}
@@ -81,7 +81,28 @@ Simple Storage :
     {%- endfor %}
 {%- endfor %}
 {%- else %}
-    This system has no simple storage
+    This system has no simple storage as Redfish standard data
+{%- endif %}
+Looking for potential OEM information :
+{%- if system.data.Oem.Hp %}
+    Supplemental information from HPE OEM part.
+    {%- if system.smart_storage %}
+    {%- for array_controllers_index in system.smart_storage.array_controllers_collection.array_controllers_dict | sort %}
+    {%- set ac = system.smart_storage.array_controllers_collection.array_controllers_dict[array_controllers_index] %}
+    Array controller id {{ array_controllers_index }} :
+        {{ ac.get_name() }}
+        {%- for logical_drives_index in ac.logical_drives_collection.logical_drives_dict | sort %}
+        {%- set ld = ac.logical_drives_collection.logical_drives_dict[logical_drives_index] %}
+        Logical drive id {{ logical_drives_index }} :
+        {{ ld.get_name() }}
+        Status : State : {{ ld.get_status().Health }} / Health : {{ ld.get_status().Health }}
+        Capacity : {{ ld.get_capacity() }} MB
+        Raid : {{ ld.get_raid() }}
+        {%- endfor %}
+    {%- endfor %}
+    {%- endif %}
+{%- else %}
+    This system has no supplemental OEM information
 {%- endif %}
 --------------------------------------------------------------------------------
 {% endfor %}
