@@ -15,84 +15,37 @@ standard_library.install_aliases()
 
 
 class NetworkAdaptersCollection(BaseCollection):
-    '''Class to manage redfish NetworkAdaptersCollection data.'''
+    '''Class to manage redfish hpe oem NetworkAdaptersCollection data.'''
     def __init__(self, url, connection_parameters):
-        super(NetworkAdaptersCollection, self).__init__(url, connection_parameters)
-
-        self.chassis_dict = {}
+        super(NetworkAdaptersCollection, self).__init__(url,
+                                                        connection_parameters)
+        self.network_adapters_dict = {}
 
         for link in self.links:
             index = re.search(r'NetworkAdapters/(\w+)', link)
-            self.chassis_dict[index.group(1)] = NetworkAdapters(
+            self.network_adapters_dict[index.group(1)] = NetworkAdapters(
                 link, connection_parameters)
 
 
-class NetworkAdapters(Device):
-    '''Class to manage redfish NetworkAdapters data.'''
-    def __init__(self, url, connection_parameters):
-        '''Class constructor'''
-        super(NetworkAdapters, self).__init__(url, connection_parameters)
+class NetworkAdapters(Base):
+    '''Class to manage redfish hpe oem NetworkAdapters data.'''
 
-        try:
-            self.thermal = Thermal(self.get_link_url('Thermal'),
-                                   connection_parameters)
-        except AttributeError:
-            self.thermal = None
+    def get_mac(self):
+        '''Get NetworkAdapters mac address
 
-        try:
-            self.power = Power(self.get_link_url('Power'),
-                               connection_parameters)
-        except AttributeError:
-            self.Power = None
-
-    def get_type(self):
-        '''Get chassis type
-
-        :returns: chassis type or "Not available"
-        :rtype: string
+        :returns:  mac adresses or "Not available"
+        :rtype: list
 
         '''
+
+        macaddresses = []
+
         try:
-            return self.data.NetworkAdaptersType
+            for port in self.data.PhysicalPorts:
+                mac = port['MacAddress']
+                macaddresses.append(mac)
+
+            return macaddresses
         except AttributeError:
             return "Not available"
 
-
-class Thermal(Base):
-    '''Class to manage redfish Thermal data.'''
-    def get_temperatures(self):
-        '''Get chassis sensors name and temparature
-
-        :returns: chassis sensor and temperature
-        :rtype: dict
-
-        '''
-        temperatures = {}
-
-        try:
-            for sensor in self.data.Temperatures:
-                temperatures[sensor.Name] = sensor.ReadingCelsius
-            return temperatures
-        except AttributeError:
-            return "Not available"
-
-    def get_fans(self):
-        '''Get chassis fan name and rpm
-
-        :returns: chassis fan and rpm
-        :rtype: dict
-
-        '''
-        fans = {}
-
-        try:
-            for fan in self.data.Fans:
-                fans[fan.FanName] = fan.ReadingRPM
-            return fans
-        except AttributeError:
-            return "Not available"
-
-
-class Power(Base):
-    '''Class to manage redfish Power data.'''
-    pass

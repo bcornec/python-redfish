@@ -55,24 +55,29 @@ class Base(object):
             raise exception.InvalidRedfishContentException(msg)
         config.logger.debug(pprint.PrettyPrinter(indent=4).pformat(self.data))
 
-    def get_link_url(self, link_type):
+    def get_link_url(self, link_type, data_subset=None):
         '''Need to be explained.
 
         :param parameter_name: name of the parameter
         :returns:  string -- parameter value
         '''
+        if not data_subset:
+            data = self.data
+        else:
+            data = data_subset
+
         self.links = []
 
         # Manage standard < 1.0
         if float(mapping.redfish_version) < 1.00:
-            links = getattr(self.data, mapping.redfish_mapper.map_links())
+            links = getattr(data, mapping.redfish_mapper.map_links())
             if link_type in links:
                 return urljoin(
                     self.url,
                     links[link_type][mapping.redfish_mapper.map_links_ref()])
             raise AttributeError
         else:
-            links = getattr(self.data, link_type)
+            links = getattr(data, link_type)
             link = getattr(links, mapping.redfish_mapper.map_links_ref())
             return urljoin(self.url, link)
 

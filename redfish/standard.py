@@ -12,6 +12,7 @@ from urllib.parse import urljoin
 import requests
 from .types import Base, BaseCollection, Device
 from . import mapping
+from . import exception
 from .oem import hpe
 standard_library.install_aliases()
 
@@ -212,6 +213,21 @@ class Systems(Device):
         except AttributeError:
             # This means we don't have Processors detailed data
             self.simple_storage_collection = None
+
+        try:
+            self.data.Oem.Hp
+            try:
+                self.network_adapters_collection = \
+                    hpe.NetworkAdaptersCollection(
+                        self.get_link_url('NetworkAdapters',
+                                          self.data.Oem.Hp.Links),
+                        connection_parameters)
+            except AttributeError:
+                # This means we don't have NetworkAdapters
+                self.network_adapters_collection = None
+        except AttributeError:
+            # This means we don't have oem data
+            pass
 
     def reset_system(self):
         '''Force reset of the system.

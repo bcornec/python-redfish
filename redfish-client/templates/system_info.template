@@ -49,6 +49,20 @@ Ethernet Interface :
 {%- else %}
     This system has no ethernet interface
 {%- endif %}
+Looking for potential OEM information :
+{%- if system.data.Oem.Hp %}
+	Supplemental information from OEM part.
+	{%- if system.network_adapters_collection %}
+	{%- for networkadapter_index in system.network_adapters_collection.network_adapters_dict | sort %}
+	{%- set na = system.network_adapters_collection.network_adapters_dict[networkadapter_index] %}
+		Network adapter id {{ networkadapter_index }} :
+		Mac address : {{ na.get_mac() | join(', ') }}
+	{%- endfor %}
+{%- endif %}
+{%- else %}
+    This system has no supplemental OEM information
+{%- endif %}
+
 
 Simple Storage :
 {%- if system.simple_storage_collection %}
