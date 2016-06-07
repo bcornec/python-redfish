@@ -9,8 +9,8 @@ check_cartridge ::
    check_cartridge [options] <manager_name>
    check_cartridge (-h | --help)
    check_cartridge --version
- 
- 
+
+
  Options:
    -h --help            Show this screen.
    --version            Show version.
@@ -21,7 +21,7 @@ check_cartridge ::
                         Security warning LEVEL > 1 could reveal password into the logs
    --debugfile FILE     Specify the client debugfile [default: $HOME/.redfish/check_cartridge.log]
    --libdebugfile FILE  Specify python-redfish library log file [default: $HOME/.redfish/python-redfish.log]
- 
+
 '''
 from __future__ import unicode_literals
 from __future__ import print_function
@@ -35,6 +35,7 @@ import os
 import sys
 import json
 import pprint
+from sets import Set
 import docopt
 import logging
 import configparser
@@ -321,11 +322,62 @@ if __name__ == '__main__':
         manager_name = arguments['<manager_name>']
     # Check if the default section is available in our conf file
     inventory.check_manager(manager_name)
-    import pdb
-    pdb.set_trace()
     connection_parameters = inventory.get_manager_info(manager_name)
 
     print('Gathering data from manager, please wait...\n')
     logger.info('Gathering data from manager')
+    if arguments['--insecure'] is True:
+        redfish_data = get_redfish_data(connection_parameters, False)
+    else:
+        redfish_data = get_redfish_data(connection_parameters, True)
+    print('Get cartridge list\n')
+
+    cartridge_file = os.path.join(os.path.dirname(arguments['--inventory']),
+                                  'cartridge.json')
+
+    current_cartridge = redfish_data.Systems.systems_dict.keys()
+    previous_cartridge = []
+
+    if os.path.isfile(cartridge_file):
+        with open(cartridge_file, 'r') as f:
+            previous_cartridge = json.load(f)
+            f.close()
+
+    print('Writing cartridge list to file')
+    with open(cartridge_file, 'w') as f:
+        if len(current_cartridge) > 0:
+            json.dump(current_cartridge, f)
+        else:
+            f.write('{}')
+    f.close()
+
+    print("Current cartridges:")
+    print("{}\n".format(", ".join(current_cartridge)))
+
+    if not previous_cartridge:
+        print("First run, changes can not be evaluated")
+        sys.exit(0)
+
+    current_cartridge = Set(current_cartridge)
+    previous_cartridge = Set(previous_cartridge)
+
+    print("Computing changes...\n")
+
+    # Check if we have added a cartridge
+    diff = current_cartridge - previous_cartridge
+    print("Cartridges added:")
+    if diff:
+        print("{}\n".format(", ".join(diff)))
+    else:
+        print("None")
+
+    # Check if we have removed a cartridge
+    diff = previous_cartridge - current_cartridge
+    print("Cartridges removed:")
+    if diff:
+        print("{}".format(", ".join(diff)))
+    else:
+        print("None")
+
     logger.info("Client session terminated")
     sys.exit(0)
