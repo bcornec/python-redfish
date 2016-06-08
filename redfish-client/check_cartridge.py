@@ -367,7 +367,14 @@ if __name__ == '__main__':
     diff = current_cartridge - previous_cartridge
     print("Cartridges added:")
     if diff:
-        print("{}\n".format(", ".join(diff)))
+        print("{}".format(", ".join(diff)))
+        for item in diff:
+            print(redfish_data.Systems.systems_dict[item].get_name())
+            print(redfish_data.Systems.systems_dict[item].get_model())
+            print(redfish_data.Systems.systems_dict[item].get_uuid())
+            print("Memory: {}".format(redfish_data.Systems.systems_dict[item].data.Memory.TotalSystemMemoryGB))
+            print("MAC@: {}".format(redfish_data.Systems.systems_dict[item].data.HostCorrelation.HostMACAddress))
+            print("------------------")
     else:
         print("None")
 
@@ -375,7 +382,7 @@ if __name__ == '__main__':
     diff = previous_cartridge - current_cartridge
     print("Cartridges removed:")
     if diff:
-        print("{}".format(", ".join(diff)))
+        print("{}\n".format(", ".join(diff)))
     else:
         print("None")
 
