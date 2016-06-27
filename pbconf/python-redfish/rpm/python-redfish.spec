@@ -89,6 +89,7 @@ popd
 %exclude %{_docdir}/PBREALPKG/html
 %exclude %{_docdir}/PBREALPKG/*.pdf
 %{_bindir}/redfish-client
+%{_bindir}/redfish-check-cartridge
 %dir %{_datadir}/redfish-client
 %{_datadir}/redfish-client/templates/*
 %config(noreplace) %{_sysconfdir}/redfish-client.conf
