@@ -11,7 +11,7 @@ NOTE::
 
     The current Redfish specification revision is 1.0.0 - Note that the mockup
     is still at version 0.99.0a and may not reflect what the standard provides
-    fully.
+    fully. And please check the version before you use it.
 
 Documentation
 -------------
