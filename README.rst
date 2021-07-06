@@ -11,7 +11,7 @@ NOTE::
 
     The current Redfish specification revision is 1.0.0 - Note that the mockup
     is still at version 0.99.0a and may not reflect what the standard provides
-    fully
+    fully.
 
 Documentation
 -------------
@@ -23,7 +23,7 @@ Project Structure
 -----------------
 
 This project follows the same convention as OpenStack projects, eg. using pbr
-for build and test automation::
+for build and test automation:
 
     doc/            # Documentation
     doc/source      # The doc source files live here
@@ -57,7 +57,7 @@ as well with all Python 3 releases.
 Get the source code
 -------------------
 
-The source code is available on github and can be retrieved using::
+The source code is available on github and can be retrieved using:
 
     git clone https://github.com/openstack/python-redfish.git
 
