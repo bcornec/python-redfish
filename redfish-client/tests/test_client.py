@@ -81,28 +81,26 @@ def test_dockerbuild():
     docker = DockerTest()
     # Warning :  Image tag is derived from file name, do not use uppercase !!!
     #            because docker image tags can not use uppercase so far.
-    dockerfiles = ('redfish-client/tests/ubuntu-16.04-src-p2.dkf',
-                   'redfish-client/tests/debian-8-src-p2.dkf',
-                   'redfish-client/tests/centos-7-src-p2.dkf',
-                   'redfish-client/tests/fedora-25-src-p2.dkf',
-                   'redfish-client/tests/fedora-25-src-p3.dkf',
-                   'redfish-client/tests/fedora-25-pip-p2.dkf',)
+    dockerfiles = ('redfish-client/tests/ubuntu-20.04-src-p3.dkf',
+                   'redfish-client/tests/debian-11-src-p3.dkf',
+                   'redfish-client/tests/centos-7-src-p3.dkf',
+                   'redfish-client/tests/fedora-35-src-p3.dkf',
+                   'redfish-client/tests/fedora-35-pip-p3.dkf',)
     for dockerfile in dockerfiles:
         print('Testing : {}'.format(dockerfile))
         response = docker.build(dockerfile)
-        status = str(response.pop())
-        assert 'Successfully built' in status
+        status = str(response[-2])
+        assert 'Successfully built' in status, f"error with {dockerfile} : {status}"
 
 
 @local_docker
 def test_install():
     docker = DockerTest()
-    images = ('rf-ubuntu-16.04-src-p2',
-              'rf-debian-8-src-p2',
-              'rf-centos-7-src-p2',
-              'rf-fedora-25-src-p2',
-              'rf-fedora-25-src-p3',
-              'rf-fedora-25-pip-p2')
+    images = ('rf-ubuntu-20.04-src-p3',
+              'rf-debian-11-src-p3',
+              'rf-centos-7-src-p3',
+              'rf-fedora-35-src-p3',
+              'rf-fedora-35-pip-p3')
     for img in images:
         print('Testing : {}'.format(img))
         response = docker.run(img, 'redfish-client config showall')
@@ -113,12 +111,11 @@ def test_install():
 @local_docker
 def test_versionformat():
     docker = DockerTest()
-    images = ('rf-ubuntu-16.04-src-p2',
-              'rf-debian-8-src-p2',
-              'rf-centos-7-src-p2',
-              'rf-fedora-25-src-p2',
-              'rf-fedora-25-src-p3',
-              'rf-fedora-25-pip-p2')
+    images = ('rf-ubuntu-20.04-src-p3',
+              'rf-debian-11-src-p3',
+              'rf-centos-7-src-p3',
+              'rf-fedora-35-src-p3',
+              'rf-fedora-35-pip-p3')
     for img in images:
         print('Testing : {}'.format(img))
         response = docker.run(img, 'redfish-client --version')
