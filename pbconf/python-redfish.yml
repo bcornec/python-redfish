@@ -115,7 +115,7 @@ vetype:
 # Global version/tag for the project
 #
 projver:
-  python-redfish: 0.4.4
+  python-redfish: 0.4.5
 projtag:
   python-redfish: 1
 #
